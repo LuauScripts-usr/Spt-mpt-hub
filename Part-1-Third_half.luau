@@ -1,307 +1,322 @@
+
+-- =============================================================================
+-- START OF PART 1 (THIRD HALF) (SECTIONS 12.5-13.7)
+-- =============================================================================
 -- ╔══════════════════════════════════════════════════════════════════════╗
 -- ║  SECTION 12.5: MOVEMENT SYSTEMS INITIALIZATION (NEW IN v10)        ║
--- ║  Speed, Jump, Noclip, Fly, InfiniteJump – typed & pre-allocated    ║
+--   Speed, Jump, Noclip, Fly, InfiniteJump – typed & pre-allocated    ║
+-- ║  Isolated in do...end block                                          ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
-
+do
 type MovementConnection = {
-    SpeedConn: RBXScriptConnection?,
-    JumpConn: RBXScriptConnection?,
-    NoclipConn: RBXScriptConnection?,
-    FlyConn: RBXScriptConnection?,
-    InfJumpConn: RBXScriptConnection?,
+SpeedConn: RBXScriptConnection?,
+JumpConn: RBXScriptConnection?,
+NoclipConn: RBXScriptConnection?,
+FlyConn: RBXScriptConnection?,
+InfJumpConn: RBXScriptConnection?,
 }
-
 local MovementConns: MovementConnection = {
-    SpeedConn = nil,
-    JumpConn = nil,
-    NoclipConn = nil,
-    FlyConn = nil,
-    InfJumpConn = nil,
+SpeedConn = nil,
+JumpConn = nil,
+NoclipConn = nil,
+FlyConn = nil,
+InfJumpConn = nil,
 }
-
 -- Pre-allocated fly state (zero GC pressure)
 local _fly_body_vel: BodyVelocity? = nil
 local _fly_body_gyro: BodyGyro? = nil
 local _fly_camera: Camera? = nil
-
 local function Movement_ApplySpeed(): ()
-    if not Movement.SpeedHack then return end
-    local char: Model? = player.Character
-    if not char then return end
-    local hum: Instance? = char:FindFirstChildOfClass("Humanoid")
-    if not hum or not hum:IsA("Humanoid") then return end
-    local ok: boolean = pcall(function()
-        hum.WalkSpeed = Movement.SpeedValue
-    end)
-    if not ok then
-        warn("[EXO-MOVE] Speed apply failed")
-    end
+if not Movement.SpeedHack then return end
+local char: Model? = player.Character
+if not char then return end
+local hum: Instance? = char:FindFirstChildOfClass("Humanoid")
+if not hum or not hum:IsA("Humanoid") then return end
+local ok: boolean = pcall(function()
+hum.WalkSpeed = Movement.SpeedValue
+end)
+if not ok then
+warn("[EXO-MOVE] Speed apply failed")
 end
-
+end
 local function Movement_ResetSpeed(): ()
-    local char: Model? = player.Character
-    if not char then return end
-    local hum: Instance? = char:FindFirstChildOfClass("Humanoid")
-    if not hum or not hum:IsA("Humanoid") then return end
-    pcall(function()
-        hum.WalkSpeed = 16
-    end)
+local char: Model? = player.Character
+if not char then return end
+local hum: Instance? = char:FindFirstChildOfClass("Humanoid")
+if not hum or not hum:IsA("Humanoid") then return end
+pcall(function()
+hum.WalkSpeed = 16
+end)
 end
-
 local function Movement_StartSpeedLoop(): ()
-    if MovementConns.SpeedConn then
-        pcall(function() MovementConns.SpeedConn:Disconnect() end)
-    end
-    MovementConns.SpeedConn = RunService.Heartbeat:Connect(function()
-        if not Movement.SpeedHack then return end
-        Movement_ApplySpeed()
-    end)
+if MovementConns.SpeedConn then
+pcall(function() MovementConns.SpeedConn:Disconnect() end)
 end
-
+MovementConns.SpeedConn = RunService.Heartbeat:Connect(function()
+if not Movement.SpeedHack then return end
+Movement_ApplySpeed()
+end)
+end
 local function Movement_StopSpeedLoop(): ()
-    if MovementConns.SpeedConn then
-        pcall(function() MovementConns.SpeedConn:Disconnect() end)
-        MovementConns.SpeedConn = nil
-    end
-    Movement_ResetSpeed()
+if MovementConns.SpeedConn then
+pcall(function() MovementConns.SpeedConn:Disconnect() end)
+MovementConns.SpeedConn = nil
 end
-
+Movement_ResetSpeed()
+end
 local function Movement_ApplyJumpPower(): ()
-    if not Movement.JumpPower then return end
-    local char: Model? = player.Character
-    if not char then return end
-    local hum: Instance? = char:FindFirstChildOfClass("Humanoid")
-    if not hum or not hum:IsA("Humanoid") then return end
-    pcall(function()
-        hum.JumpPower = Movement.JumpValue
-        hum.UseJumpPower = true
-    end)
+if not Movement.JumpPower then return end
+local char: Model? = player.Character
+if not char then return end
+local hum: Instance? = char:FindFirstChildOfClass("Humanoid")
+if not hum or not hum:IsA("Humanoid") then return end
+pcall(function()
+hum.JumpPower = Movement.JumpValue
+hum.UseJumpPower = true
+end)
 end
-
 local function Movement_ResetJumpPower(): ()
-    local char: Model? = player.Character
-    if not char then return end
-    local hum: Instance? = char:FindFirstChildOfClass("Humanoid")
-    if not hum or not hum:IsA("Humanoid") then return end
-    pcall(function()
-        hum.JumpPower = 50
-        hum.UseJumpPower = false
-    end)
+local char: Model? = player.Character
+if not char then return end
+local hum: Instance? = char:FindFirstChildOfClass("Humanoid")
+if not hum or not hum:IsA("Humanoid") then return end
+pcall(function()
+hum.JumpPower = 50
+hum.UseJumpPower = false
+end)
 end
-
 local function Movement_StartJumpLoop(): ()
-    if MovementConns.JumpConn then
-        pcall(function() MovementConns.JumpConn:Disconnect() end)
-    end
-    MovementConns.JumpConn = RunService.Heartbeat:Connect(function()
-        if not Movement.JumpPower then return end
-        Movement_ApplyJumpPower()
-    end)
+if MovementConns.JumpConn then
+pcall(function() MovementConns.JumpConn:Disconnect() end)
 end
-
+MovementConns.JumpConn = RunService.Heartbeat:Connect(function()
+if not Movement.JumpPower then return end
+Movement_ApplyJumpPower()
+end)
+end
 local function Movement_StopJumpLoop(): ()
-    if MovementConns.JumpConn then
-        pcall(function() MovementConns.JumpConn:Disconnect() end)
-        MovementConns.JumpConn = nil
-    end
-    Movement_ResetJumpPower()
+if MovementConns.JumpConn then
+pcall(function() MovementConns.JumpConn:Disconnect() end)
+MovementConns.JumpConn = nil
 end
-
+Movement_ResetJumpPower()
+end
 local function Movement_StartNoclip(): ()
-    if MovementConns.NoclipConn then
-        pcall(function() MovementConns.NoclipConn:Disconnect() end)
-    end
-    MovementConns.NoclipConn = RunService.Stepped:Connect(function()
-        if not Movement.Noclip then return end
-        local char: Model? = player.Character
-        if not char then return end
-        local children_ok: boolean, children = pcall(function() return char:GetDescendants() end)
-        if not children_ok or type(children) ~= "table" then return end
-        for _, part: Instance in children do
-            if part:IsA("BasePart") then
-                pcall(function()
-                    part.CanCollide = false
-                end)
-            end
-        end
-    end)
+if MovementConns.NoclipConn then
+pcall(function() MovementConns.NoclipConn:Disconnect() end)
 end
-
+MovementConns.NoclipConn = RunService.Stepped:Connect(function()
+if not Movement.Noclip then return end
+local char: Model? = player.Character
+if not char then return end
+local children_ok: boolean, children = pcall(function() return char:GetDescendants() end)
+if not children_ok or type(children) ~= "table" then return end
+for _, part: Instance in children do
+if part:IsA("BasePart") then
+pcall(function()
+part.CanCollide = false
+end)
+end
+end
+end)
+end
 local function Movement_StopNoclip(): ()
-    if MovementConns.NoclipConn then
-        pcall(function() MovementConns.NoclipConn:Disconnect() end)
-        MovementConns.NoclipConn = nil
-    end
-    -- Restore collision on all parts
-    local char: Model? = player.Character
-    if char then
-        local children_ok: boolean, children = pcall(function() return char:GetDescendants() end)
-        if children_ok and type(children) == "table" then
-            for _, part: Instance in children do
-                if part:IsA("BasePart") then
-                    pcall(function()
-                        part.CanCollide = true
-                    end)
-                end
-            end
-        end
-    end
+if MovementConns.NoclipConn then
+pcall(function() MovementConns.NoclipConn:Disconnect() end)
+MovementConns.NoclipConn = nil
 end
-
+-- Restore collision on all parts
+local char: Model? = player.Character
+if char then
+local children_ok: boolean, children = pcall(function() return char:GetDescendants() end)
+if children_ok and type(children) == "table" then
+for _, part: Instance in children do
+if part:IsA("BasePart") then
+pcall(function()
+part.CanCollide = true
+end)
+end
+end
+end
+end
+end
 local function Movement_StartFly(): ()
-    if MovementConns.FlyConn then
-        pcall(function() MovementConns.FlyConn:Disconnect() end)
-    end
-
-    local char: Model? = player.Character
-    if not char then return end
-    local hrp: BasePart? = char:FindFirstChild("HumanoidRootPart")
-    if not hrp or not hrp:IsA("BasePart") then return end
-
-    _fly_camera = workspace.CurrentCamera
-
-    -- Create BodyVelocity for movement
-    local bv_ok: boolean, bv = pcall(function()
-        local b: BodyVelocity = Instance.new("BodyVelocity")
-        b.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        b.Velocity = Vector3.zero
-        b.Parent = hrp
-        return b
-    end)
-    if bv_ok and bv then
-        _fly_body_vel = bv
-    end
-
-    -- Create BodyGyro for orientation
-    local bg_ok: boolean, bg = pcall(function()
-        local g: BodyGyro = Instance.new("BodyGyro")
-        g.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-        g.D = 200
-        g.P = 10000
-        g.Parent = hrp
-        return g
-    end)
-    if bg_ok and bg then
-        _fly_body_gyro = bg
-    end
-
-    MovementConns.FlyConn = RunService.RenderStepped:Connect(function()
-        if not Movement.Fly then return end
-        if not _fly_body_vel or not _fly_body_gyro then return end
-        if not _fly_camera then return end
-
-        local camCF: CFrame = _fly_camera.CFrame
-        local lookDir: Vector3 = camCF.LookVector
-        local rightDir: Vector3 = camCF.RightVector
-        local upDir: Vector3 = Vector3.new(0, 1, 0)
-
-        local moveVec: Vector3 = Vector3.zero
-
-        -- WASD + Space/Shift controls
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-            moveVec += lookDir
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-            moveVec -= lookDir
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-            moveVec -= rightDir
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-            moveVec += rightDir
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            moveVec += upDir
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-            moveVec -= upDir
-        end
-
-        -- Normalize and apply speed
-        if moveVec.Magnitude > 0 then
-            moveVec = moveVec.Unit * Movement.FlySpeed
-        end
-
-        pcall(function()
-            _fly_body_vel.Velocity = moveVec
-        end)
-        pcall(function()
-            _fly_body_gyro.CFrame = camCF
-        end)
-    end)
+if MovementConns.FlyConn then
+pcall(function() MovementConns.FlyConn:Disconnect() end)
 end
-
+local char: Model? = player.Character
+if not char then return end
+local hrp: BasePart? = char:FindFirstChild("HumanoidRootPart")
+if not hrp or not hrp:IsA("BasePart") then return end
+_fly_camera = workspace.CurrentCamera
+-- Create BodyVelocity for movement
+local bv_ok: boolean, bv = pcall(function()
+local b: BodyVelocity = Instance.new("BodyVelocity")
+b.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+b.Velocity = Vector3.zero
+b.P = 10000
+b.Parent = hrp
+return b
+end)
+if bv_ok and bv then
+_fly_body_vel = bv
+end
+-- Create BodyGyro for orientation
+local bg_ok: boolean, bg = pcall(function()
+local g: BodyGyro = Instance.new("BodyGyro")
+g.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+g.D = 200
+g.P = 10000
+g.Parent = hrp
+return g
+end)
+if bg_ok and bg then
+_fly_body_gyro = bg
+end
+-- Disable gravity influence on character while flying
+local hum: Instance? = char:FindFirstChildOfClass("Humanoid")
+if hum and hum:IsA("Humanoid") then
+pcall(function()
+hum.PlatformStand = true
+end)
+end
+MovementConns.FlyConn = RunService.RenderStepped:Connect(function()
+if not Movement.Fly then return end
+if not _fly_body_vel or not _fly_body_gyro then return end
+if not _fly_camera then
+_fly_camera = workspace.CurrentCamera
+if not _fly_camera then return end
+end
+local camCF: CFrame = _fly_camera.CFrame
+local lookDir: Vector3 = camCF.LookVector
+local rightDir: Vector3 = camCF.RightVector
+local upDir: Vector3 = Vector3.new(0, 1, 0)
+local moveVec: Vector3 = Vector3.zero
+-- WASD + Space/Shift controls
+if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+moveVec += lookDir
+end
+if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+moveVec -= lookDir
+end
+if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+moveVec -= rightDir
+end
+if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+moveVec += rightDir
+end
+if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+moveVec += upDir
+end
+if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+moveVec -= upDir
+end
+-- Normalize and apply speed
+if moveVec.Magnitude > 0 then
+moveVec = moveVec.Unit * Movement.FlySpeed
+end
+pcall(function()
+if _fly_body_vel then
+_fly_body_vel.Velocity = moveVec
+end
+end)
+pcall(function()
+if _fly_body_gyro then
+_fly_body_gyro.CFrame = camCF
+end
+end)
+end)
+end
 local function Movement_StopFly(): ()
-    if MovementConns.FlyConn then
-        pcall(function() MovementConns.FlyConn:Disconnect() end)
-        MovementConns.FlyConn = nil
-    end
-    if _fly_body_vel and _fly_body_vel.Parent then
-        pcall(function() _fly_body_vel:Destroy() end)
-        _fly_body_vel = nil
-    end
-    if _fly_body_gyro and _fly_body_gyro.Parent then
-        pcall(function() _fly_body_gyro:Destroy() end)
-        _fly_body_gyro = nil
-    end
+if MovementConns.FlyConn then
+pcall(function() MovementConns.FlyConn:Disconnect() end)
+MovementConns.FlyConn = nil
 end
-
+if _fly_body_vel and _fly_body_vel.Parent then
+pcall(function() _fly_body_vel:Destroy() end)
+_fly_body_vel = nil
+end
+if _fly_body_gyro and _fly_body_gyro.Parent then
+pcall(function() _fly_body_gyro:Destroy() end)
+_fly_body_gyro = nil
+end
+-- Restore platform stand
+local char: Model? = player.Character
+if char then
+local hum: Instance? = char:FindFirstChildOfClass("Humanoid")
+if hum and hum:IsA("Humanoid") then
+pcall(function()
+hum.PlatformStand = false
+end)
+end
+end
+end
 local function Movement_StartInfiniteJump(): ()
-    if MovementConns.InfJumpConn then
-        pcall(function() MovementConns.InfJumpConn:Disconnect() end)
-    end
-    MovementConns.InfJumpConn = UserInputService.JumpRequest:Connect(function()
-        if not Movement.InfiniteJump then return end
-        local char: Model? = player.Character
-        if not char then return end
-        local hum: Instance? = char:FindFirstChildOfClass("Humanoid")
-        if hum and hum:IsA("Humanoid") then
-            pcall(function()
-                hum:ChangeState(Enum.HumanoidStateType.Jumping)
-            end)
-        end
-    end)
+if MovementConns.InfJumpConn then
+pcall(function() MovementConns.InfJumpConn:Disconnect() end)
 end
-
+MovementConns.InfJumpConn = UserInputService.JumpRequest:Connect(function()
+if not Movement.InfiniteJump then return end
+local char: Model? = player.Character
+if not char then return end
+local hum: Instance? = char:FindFirstChildOfClass("Humanoid")
+if hum and hum:IsA("Humanoid") then
+pcall(function()
+hum:ChangeState(Enum.HumanoidStateType.Jumping)
+end)
+end
+end)
+end
 local function Movement_StopInfiniteJump(): ()
-    if MovementConns.InfJumpConn then
-        pcall(function() MovementConns.InfJumpConn:Disconnect() end)
-        MovementConns.InfJumpConn = nil
-    end
+if MovementConns.InfJumpConn then
+pcall(function() MovementConns.InfJumpConn:Disconnect() end)
+MovementConns.InfJumpConn = nil
 end
-
+end
 -- Master toggle handler for movement features
 local function Movement_HandleToggle(feature: string, state: boolean): ()
-    if feature == "SpeedHack" then
-        Movement.SpeedHack = state
-        if state then Movement_StartSpeedLoop() else Movement_StopSpeedLoop() end
-    elseif feature == "JumpPower" then
-        Movement.JumpPower = state
-        if state then Movement_StartJumpLoop() else Movement_StopJumpLoop() end
-    elseif feature == "Noclip" then
-        Movement.Noclip = state
-        if state then Movement_StartNoclip() else Movement_StopNoclip() end
-    elseif feature == "Fly" then
-        Movement.Fly = state
-        if state then Movement_StartFly() else Movement_StopFly() end
-    elseif feature == "InfiniteJump" then
-        Movement.InfiniteJump = state
-        if state then Movement_StartInfiniteJump() else Movement_StopInfiniteJump() end
-    end
+if type(feature) ~= "string" then return end
+if feature == "SpeedHack" then
+Movement.SpeedHack = state
+if state then Movement_StartSpeedLoop() else Movement_StopSpeedLoop() end
+elseif feature == "JumpPower" then
+Movement.JumpPower = state
+if state then Movement_StartJumpLoop() else Movement_StopJumpLoop() end
+elseif feature == "Noclip" then
+Movement.Noclip = state
+if state then Movement_StartNoclip() else Movement_StopNoclip() end
+elseif feature == "Fly" then
+Movement.Fly = state
+if state then Movement_StartFly() else Movement_StopFly() end
+elseif feature == "InfiniteJump" then
+Movement.InfiniteJump = state
+if state then Movement_StartInfiniteJump() else Movement_StopInfiniteJump() end
 end
-
--- Reset all movement on character death/respawn
+end
+local function Movement_StopAll(): ()
+Movement.SpeedHack = false
+Movement.JumpPower = false
+Movement.Noclip = false
+Movement.Fly = false
+Movement.InfiniteJump = false
+Movement_StopSpeedLoop()
+Movement_StopJumpLoop()
+Movement_StopNoclip()
+Movement_StopFly()
+Movement_StopInfiniteJump()
+end
+-- Auto-reset all movement on character death/respawn
 player.CharacterAdded:Connect(function()
-    task.defer(function()
-        Movement_ResetSpeed()
-        Movement_ResetJumpPower()
-        if Movement.Noclip then Movement_StopNoclip() end
-        if Movement.Fly then Movement_StopFly() end
-    end)
+task.defer(function()
+Movement_ResetSpeed()
+Movement_ResetJumpPower()
+if Movement.Noclip then Movement_StopNoclip() end
+if Movement.Fly then Movement_StopFly() end
 end)
-
+end)
 -- Expose globally
 _G.EXO_Movement_HandleToggle = Movement_HandleToggle
+_G.EXO_Movement_StopAll = Movement_StopAll
 _G.EXO_Movement_StartSpeedLoop = Movement_StartSpeedLoop
 _G.EXO_Movement_StopSpeedLoop = Movement_StopSpeedLoop
 _G.EXO_Movement_StartFly = Movement_StartFly
@@ -310,534 +325,1101 @@ _G.EXO_Movement_StartNoclip = Movement_StartNoclip
 _G.EXO_Movement_StopNoclip = Movement_StopNoclip
 _G.EXO_Movement_StartInfiniteJump = Movement_StartInfiniteJump
 _G.EXO_Movement_StopInfiniteJump = Movement_StopInfiniteJump
-
+_G.EXO_ApplySpeed = Movement_ApplySpeed
+_G.EXO_ResetSpeed = Movement_ResetSpeed
+_G.EXO_ApplyJump = Movement_ApplyJumpPower
+_G.EXO_ResetJump = Movement_ResetJumpPower
 print(`[EXO] Section 12.5 complete. Movement Systems initialized.`)
 print(`[EXO]   Features: Speed, JumpPower, Noclip, Fly, InfiniteJump`)
 print(`[EXO]   Fly controls: WASD + Space/Shift`)
 print(`[EXO]   Auto-reset on respawn: ENABLED`)
-
+end
 -- ╔══════════════════════════════════════════════════════════════════════╗
--- ║  SECTION 12.6: MODULARIZED UI TAB CONFIGURATION REGISTRY           ║
--- ║  Declarative tab/section/element definitions for clean UI builds   ║
--- ╚══════════════════════════════════════════════════════════════════════╝
-
-type UIElementConfig = {
-    Type: string,
-    Name: string,
-    Default: any?,
-    Min: number?,
-    Max: number?,
-    Options: {string}?,
-    Placeholder: string?,
-    Callback: ((any) -> ())?,
-    Info: string?,
-}
-
-type UISectionConfig = {
-    Title: string,
-    Elements: {UIElementConfig},
-}
-
-type UITabConfig = {
-    Title: string,
-    Sections: {UISectionConfig},
-    Locked: boolean?,
-}
-
--- Central registry for all UI tab definitions
--- This allows tabs to be defined declaratively and built programmatically
-local UITabRegistry: {UITabConfig} = {}
-
-local function UI_RegisterTab(config: UITabConfig): ()
-    table.insert(UITabRegistry, config)
+-- ║  SECTION 13.1: 1000x AURA ENGINE                                   ║
+-- ║  Multi-vector prediction | Triple-remote fire | Multi-hitbox         ║
+-- ║  Isolated in do...end block to cap local registers                   ║
+-- ══════════════════════════════════════════════════════════════════════╝
+do
+-- Private state (scoped to this block only)
+local _aura_conn: RBXScriptConnection? = nil
+local _aura_tick_count: number = 0
+-- Local helper: find all damage parts on a tool
+local function _find_damage_parts(tool: Instance): {BasePart}
+local result: {BasePart} = {}
+local ok: boolean, descendants = pcall(function()
+return tool:GetDescendants()
+end)
+if ok and type(descendants) == "table" then
+for _, obj: Instance in descendants do
+if obj:IsA("TouchTransmitter") then
+local parent = obj.Parent
+if parent and parent:IsA("BasePart") then
+table.insert(result, parent)
 end
-
-local function UI_GetTabCount(): number
-    return #UITabRegistry
 end
-
-local function UI_GetTab(index: number): UITabConfig?
-    if index < 1 or index > #UITabRegistry then
-        return nil
-    end
-    return UITabRegistry[index]
 end
-
-local function UI_FindTab(title: string): UITabConfig?
-    for _, tab in UITabRegistry do
-        if tab.Title == title then
-            return tab
-        end
-    end
-    return nil
 end
-
--- Register default tab configurations (declarative definitions)
--- These are used by the UI builder in Part 4 to construct the actual UI
-UI_RegisterTab({
-    Title = "Combat",
-    Locked = false,
-    Sections = {
-        {
-            Title = "1000x Multi-Target Aura",
-            Elements = {
-                {Type = "Toggle", Name = "Enable Aura", Default = false},
-                {Type = "Toggle", Name = "Instant Kill", Default = false},
-                {Type = "Slider", Name = "Prediction Depth", Min = 3, Max = 30, Default = 8},
-                {Type = "Dropdown", Name = "Aura Targets", Options = {}},
-            },
-        },
-        {
-            Title = "1000x Tool Follow",
-            Elements = {
-                {Type = "Toggle", Name = "Enable Tool Follow", Default = false},
-            },
-        },
-        {
-            Title = "1000x Defense / Anti-Aura",
-            Elements = {
-                {Type = "Toggle", Name = "Enable Anti-Aura", Default = false},
-                {Type = "Toggle", Name = "God Mode (ForceField)", Default = false},
-                {Type = "Toggle", Name = "Repel (Anti-Touch)", Default = false},
-                {Type = "Toggle", Name = "Phase (No Collide)", Default = false},
-                {Type = "Toggle", Name = "Heal Aura", Default = false},
-                {Type = "Slider", Name = "Repel Force", Min = 50, Max = 300, Default = 120},
-                {Type = "Slider", Name = "Repel Radius", Min = 8, Max = 30, Default = 18},
-                {Type = "Toggle", Name = "Anti Spawnkill", Default = false},
-            },
-        },
-    },
-})
-
-UI_RegisterTab({
-    Title = "Movement",
-    Locked = false,
-    Sections = {
-        {
-            Title = "Speed & Jump",
-            Elements = {
-                {Type = "Toggle", Name = "Speed Hack", Default = false},
-                {Type = "Slider", Name = "Walk Speed", Min = 16, Max = 200, Default = 16},
-                {Type = "Toggle", Name = "Jump Power", Default = false},
-                {Type = "Slider", Name = "Jump Value", Min = 50, Max = 500, Default = 50},
-                {Type = "Toggle", Name = "Infinite Jump", Default = false},
-            },
-        },
-        {
-            Title = "Flight & Phase",
-            Elements = {
-                {Type = "Toggle", Name = "Noclip", Default = false},
-                {Type = "Toggle", Name = "Fly", Default = false},
-                {Type = "Slider", Name = "Fly Speed", Min = 10, Max = 300, Default = 50},
-            },
-        },
-    },
-})
-
-UI_RegisterTab({
-    Title = "Tycoon",
-    Locked = false,
-    Sections = {
-        {
-            Title = "1000x Tycoon Automation",
-            Elements = {
-                {Type = "Toggle", Name = "Auto Claim Money", Default = false},
-                {Type = "Toggle", Name = "Smart Auto Build (Multi-Buy)", Default = false},
-                {Type = "Toggle", Name = "Auto Grab Weapons", Default = false},
-            },
-        },
-        {
-            Title = "Tools & Cooldown",
-            Elements = {
-                {Type = "Toggle", Name = "Auto Use Tools (0 delay)", Default = false},
-                {Type = "Toggle", Name = "No Cooldown (SAFE)", Default = false},
-            },
-        },
-    },
-})
-
-UI_RegisterTab({
-    Title = "Kill Engine",
-    Locked = false,
-    Sections = {
-        {
-            Title = "1000x Omni-Kill Engine",
-            Elements = {
-                {Type = "Toggle", Name = "Enable Omni-Kill", Default = false},
-                {Type = "Toggle", Name = "Insta-Kill Micro-Burst", Default = false},
-                {Type = "Toggle", Name = "Adaptive Burst (Threat-Based)", Default = true},
-                {Type = "Slider", Name = "Prediction Aggression", Min = 3, Max = 30, Default = 8},
-                {Type = "Slider", Name = "Burst Count", Min = 3, Max = 20, Default = 12},
-                {Type = "Button", Name = "Manual Kill Burst"},
-                {Type = "Button", Name = "Refresh Target List"},
-            },
-        },
-        {
-            Title = "1000x Hit Amplifier",
-            Elements = {
-                {Type = "Toggle", Name = "Enable Hit Amplifier", Default = false},
-                {Type = "Slider", Name = "Scan Range", Min = 15, Max = 60, Default = 45},
-                {Type = "Slider", Name = "Burst Count", Min = 1, Max = 15, Default = 8},
-                {Type = "Toggle", Name = "Multi-Pulse (3x waves)", Default = true},
-            },
-        },
-        {
-            Title = "1000x Tool Arsenal",
-            Elements = {
-                {Type = "Toggle", Name = "Enable Tool Arsenal", Default = false},
-                {Type = "Button", Name = "Force Acquire All"},
-            },
-        },
-    },
-})
-
-UI_RegisterTab({
-    Title = "Visuals",
-    Locked = false,
-    Sections = {
-        {
-            Title = "1000x ESP (Threat-Colored)",
-            Elements = {
-                {Type = "Toggle", Name = "Enable ESP", Default = false},
-            },
-        },
-        {
-            Title = "1000x Anti-Lag Shield",
-            Elements = {
-                {Type = "Toggle", Name = "Enable Anti-Lag", Default = false},
-            },
-        },
-    },
-})
-
-UI_RegisterTab({
-    Title = "FSM Control",
-    Locked = false,
-    Sections = {
-        {
-            Title = "Adaptive FSM Engine",
-            Elements = {
-                {Type = "Toggle", Name = "Enable Auto Mode Switching", Default = false},
-                {Type = "Button", Name = "View Current Mode"},
-                {Type = "Button", Name = "View Mode Scores"},
-            },
-        },
-        {
-            Title = "Manual Mode Override",
-            Elements = {
-                {Type = "Button", Name = "Force TYCOON Mode"},
-                {Type = "Button", Name = "Force DEFENSIVE Mode"},
-                {Type = "Button", Name = "Force COMBAT Mode"},
-                {Type = "Button", Name = "Force IDLE Mode"},
-            },
-        },
-    },
-})
-
-UI_RegisterTab({
-    Title = "Sentinel AI",
-    Locked = false,
-    Sections = {
-        {
-            Title = "AI Control",
-            Elements = {
-                {Type = "Toggle", Name = "Enable Sentinel AI", Default = true},
-                {Type = "Toggle", Name = "Auto-Analyze Kills", Default = true},
-                {Type = "Button", Name = "Open AI Chat"},
-                {Type = "Button", Name = "Disable All AI Features"},
-            },
-        },
-        {
-            Title = "AI Intelligence",
-            Elements = {
-                {Type = "Button", Name = "View All Threat Profiles"},
-                {Type = "Button", Name = "Reset All Profiles"},
-                {Type = "Button", Name = "Reset AI Memory"},
-            },
-        },
-    },
-})
-
-UI_RegisterTab({
-    Title = "Settings",
-    Locked = false,
-    Sections = {
-        {
-            Title = "General",
-            Elements = {
-                {Type = "Toggle", Name = "Anti-Lag Shield", Default = false},
-                {Type = "Toggle", Name = "ESP (Threat-Colored)", Default = false},
-                {Type = "Toggle", Name = "Kill Notifications", Default = false},
-                {Type = "Toggle", Name = "Kill Logs", Default = false},
-                {Type = "Button", Name = "View Kill Logs"},
-            },
-        },
-        {
-            Title = "Configuration",
-            Elements = {
-                {Type = "Button", Name = "Save Config"},
-                {Type = "Button", Name = "Load Config"},
-                {Type = "Button", Name = "Rejoin Server"},
-            },
-        },
-    },
-})
-
-UI_RegisterTab({
-    Title = "Updates",
-    Locked = false,
-    Sections = {
-        {
-            Title = "EXO Hub Changelog",
-            Elements = {
-                {Type = "Label", Name = "v10.0 - SENTINEL PRIME (CURRENT)"},
-                {Type = "Label", Name = "  - Discord Webhook Logger"},
-                {Type = "Label", Name = "  - Keybind Manager"},
-                {Type = "Label", Name = "  - Target Prediction Engine"},
-                {Type = "Label", Name = "  - Profile State Saving"},
-                {Type = "Label", Name = "  - Movement Systems"},
-                {Type = "Label", Name = "  - Modularized UI Config"},
-            },
-        },
-    },
-})
-
--- Expose globally
-_G.EXO_UI_RegisterTab = UI_RegisterTab
-_G.EXO_UI_GetTabCount = UI_GetTabCount
-_G.EXO_UI_GetTab = UI_GetTab
-_G.EXO_UI_FindTab = UI_FindTab
-_G.EXO_UITabRegistry = UITabRegistry
-
-print(`[EXO] Section 12.6 complete. UI Tab Configuration Registry initialized.`)
-print(`[EXO]   Registered tabs: {UI_GetTabCount()}`)
-print(`[EXO]   Tab list: Combat, Movement, Tycoon, Kill Engine, Visuals,`)
-print(`[EXO]              FSM Control, Sentinel AI, Settings, Updates`)
-
+if #result == 0 then
+local handle: Instance? = tool:FindFirstChild("Handle")
+if handle and handle:IsA("BasePart") then
+table.insert(result, handle)
+end
+end
+return result
+end
+-- Local helper: predict target position with quadratic + gravity
+local function _predict_position(pos: Vector3, vel: Vector3, latency: number): Vector3
+return pos + vel * latency + vel * vel * 0.002 + Vector3.new(0, -0.5, 0)
+end
+-- Main aura start function
+local function startAuraLoop(): ()
+if _aura_conn then
+pcall(function() _aura_conn:Disconnect() end)
+end
+_aura_tick_count = 0
+_aura_conn = RunService.PreSimulation:Connect(function()
+-- Periodic threat update (throttled)
+if _aura_tick_count % 10 == 0 then
+updateThreatLevel()
+end
+_aura_tick_count += 1
+if not Aura.Enabled then
+return
+end
+local myChar: Model? = player.Character
+if not myChar then
+return
+end
+local children_ok: boolean, myChildren = pcall(function() return myChar:GetChildren() end)
+if not children_ok or type(myChildren) ~= "table" then
+return
+end
+for _, tool: Instance in myChildren do
+if tool:IsA("Tool") then
+local damageParts: {BasePart} = _find_damage_parts(tool)
+if #damageParts == 0 then
+continue
+end
+for _, damagePart: BasePart in damageParts do
+local cf_ok: boolean, origCF = pcall(function() return damagePart.CFrame end)
+if not cf_ok or typeof(origCF) ~= "CFrame" then
+continue
+end
+for _, targetPlr: Player in Aura.TargetList do
+local tchar_ok: boolean, tChar = pcall(function() return targetPlr.Character end)
+if not tchar_ok or not tChar then
+continue
+end
+local hum: Instance? = tChar:FindFirstChild("Humanoid")
+if not hum then
+continue
+end
+local health_ok: boolean, health = pcall(function() return hum.Health end)
+if not health_ok or type(health) ~= "number" or health <= 0 then
+continue
+end
+local root: Instance? = tChar:FindFirstChild("HumanoidRootPart")
+if not root or not root:IsA("BasePart") then
+continue
+end
+-- 1000x PREDICTION: Velocity + gravity compensation
+local pos_ok: boolean, rootPos = pcall(function() return root.Position end)
+local vel_ok: boolean, rootVel = pcall(function() return root.Velocity end)
+if not pos_ok or typeof(rootPos) ~= "Vector3" then
+continue
+end
+local vel: Vector3 = (vel_ok and typeof(rootVel) == "Vector3") and rootVel or Vector3.zero
+-- Multi-hitbox targeting: HRP + Torso + Head
+local hitTargets: {BasePart} = {root}
+local torso: Instance? = tChar:FindFirstChild("UpperTorso") or tChar:FindFirstChild("Torso")
+local head: Instance? = tChar:FindFirstChild("Head")
+if torso and torso:IsA("BasePart") then
+table.insert(hitTargets, torso)
+end
+if head and head:IsA("BasePart") then
+table.insert(hitTargets, head)
+end
+for _, hitPart: BasePart in hitTargets do
+local hpos_ok: boolean, hitPos = pcall(function() return hitPart.Position end)
+if not hpos_ok or typeof(hitPos) ~= "Vector3" then
+continue
+end
+local targetPos: Vector3 = _predict_position(hitPos, vel, latencyEstimate)
+pcall(function()
+damagePart.CFrame = CFrame.new(targetPos)
+end)
+-- TRIPLE REMOTE FIRE (1000x upgrade)
+if DAMAGE_REMOTE then
+pcall(function()
+DAMAGE_REMOTE:FireServer(tChar, damagePart)
+end)
+end
+if DAMAGE_REMOTE_ALT then
+pcall(function()
+DAMAGE_REMOTE_ALT:FireServer(tChar, damagePart)
+end)
+end
+if DAMAGE_REMOTE_TERT then
+pcall(function()
+DAMAGE_REMOTE_TERT:FireServer(tChar, damagePart)
+end)
+end
+-- Touch fallback for servers without remotes
+if not DAMAGE_REMOTE and firetouchinterest then
+pcall(firetouchinterest, damagePart, hitPart, 0)
+pcall(firetouchinterest, damagePart, hitPart, 1)
+end
+end
+-- Restore original CFrame after sweep
+pcall(function()
+damagePart.CFrame = origCF
+end)
+end
+end
+end
+end
+-- 1000x INSTANT KILL: Multi-method termination
+if InstantKill then
+for _, plr: Player in Aura.TargetList do
+local tchar_ok: boolean, tChar = pcall(function() return plr.Character end)
+if not tchar_ok or not tChar then
+continue
+end
+local hum: Instance? = tChar:FindFirstChild("Humanoid")
+if not hum then
+continue
+end
+local health_ok: boolean, health = pcall(function() return hum.Health end)
+if not health_ok or type(health) == "number" or health <= 0 then
+continue
+end
+pcall(function()
+hum:TakeDamage(9e9)
+end)
+pcall(function()
+hum.Health = 0
+end)
+-- Brief HRP anchor to lock target in place
+local hrp: Instance? = tChar:FindFirstChild("HumanoidRootPart")
+if hrp and hrp:IsA("BasePart") then
+pcall(function()
+hrp.Anchored = true
+end)
+task.delay(0.1, function()
+pcall(function()
+if hrp and hrp.Parent then
+hrp.Anchored = false
+end
+end)
+end)
+end
+end
+end
+end)
+end
+local function stopAuraLoop(): ()
+if _aura_conn then
+pcall(function() _aura_conn:Disconnect() end)
+_aura_conn = nil
+end
+_aura_tick_count = 0
+end
+-- Expose via _G for cross-part access
+_G.EXO_StartAuraLoop = startAuraLoop
+_G.EXO_StopAuraLoop = stopAuraLoop
+print(`[EXO] Section 13.1 complete. Aura Engine registered.`)
+print(`[EXO]   Prediction: Quadratic + gravity compensation`)
+print(`[EXO]   Hitboxes: HRP + UpperTorso/Torso + Head`)
+print(`[EXO]   Remotes: Triple fire (primary + alt + tertiary)`)
+end
 -- ╔══════════════════════════════════════════════════════════════════════╗
--- ║  SECTION 12.7: CROSS-SYSTEM BRIDGE & GLOBAL REGISTRY               ║
--- ║  Single source of truth for all cross-section function references  ║
+-- ║  SECTION 13.2: 1000x TOOL FOLLOW                                   ║
+-- ║  Predictive velocity tracking | Auto tool cache refresh              ║
+-- ║  Isolated in do...end block                                          ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
-
-type GlobalBridge = {
-    Version: number,
-    Build: string,
-    Initialized: boolean,
-    SystemsLoaded: number,
-    SystemsExpected: number,
-    LoadErrors: {string},
-}
-
-local GlobalBridge: GlobalBridge = {
-    Version = _EXO_VERSION,
-    Build = _EXO_BUILD,
-    Initialized = false,
-    SystemsLoaded = 0,
-    SystemsExpected = 42,
-    LoadErrors = {},
-}
-
--- Verify all critical globals exist after Part 1 initialization
-local function Bridge_ValidateGlobals(): boolean
-    local required: {string} = {
-        -- Combat
-        "EXO_StartAuraLoop",
-        "EXO_StopAuraLoop",
-        "EXO_StartInstaKill",
-        "EXO_StopInstaKill",
-        "EXO_StartHitAmplifier",
-        "EXO_StopHitAmplifier",
-        "EXO_StartAntiAura",
-        "EXO_StopAntiAura",
-        "EXO_ApplyReach",
-        "EXO_StopReach",
-        "EXO_StartToolFollow",
-        "EXO_StopToolFollow",
-        "EXO_StartNoCooldown",
-        "EXO_StopNoCooldown",
-        "EXO_StartAutoTools",
-        "EXO_StopAutoTools",
-        -- Automation
-        "EXO_StartClaimMoney",
-        "EXO_StopClaimMoney",
-        "EXO_StartAutoBuild",
-        "EXO_StopAutoBuild",
-        "EXO_StartFastRespawn",
-        "EXO_SetupAntiSpawnkill",
-        "EXO_SetupCharacterHooks",
-        "EXO_SetupKillNotifications",
-        "EXO_OnKillDetected",
-        -- Visuals
-        "EXO_StartESP",
-        "EXO_StopESP",
-        "EXO_StartAntiLag",
-        "EXO_StopAntiLag",
-        -- AI
-        "EXO_ChatAddMessage",
-        "EXO_RobotSetState",
-        "EXO_ProcessUserMessage",
-        -- FSM
-        "EXO_FSM_Start",
-        "EXO_FSM_Stop",
-        "EXO_FSM_SetAutoSwitch",
-        "EXO_FSM_GetCurrentMode",
-        "EXO_FSM_GetModeScores",
-        "EXO_FSM_TransitionTo",
-        -- Tool Grabber
-        "EXO_TG_HasTool",
-        "EXO_TG_GetClosestPad",
-        "EXO_TG_GetProgress",
-        "EXO_StartToolGrabber",
-        "EXO_StopToolGrabber",
-        -- Movement
-        "EXO_Movement_HandleToggle",
-        "EXO_Movement_StartSpeedLoop",
-        "EXO_Movement_StopSpeedLoop",
-        "EXO_Movement_StartFly",
-        "EXO_Movement_StopFly",
-        "EXO_Movement_StartNoclip",
-        "EXO_Movement_StopNoclip",
-        "EXO_Movement_StartInfiniteJump",
-        "EXO_Movement_StopInfiniteJump",
-        -- UI
-        "EXO_UI_RegisterTab",
-        "EXO_UI_GetTabCount",
-        "EXO_UI_GetTab",
-        "EXO_UI_FindTab",
-    }
-
-    local missing: number = 0
-    for _, name: string in required do
-        if type(_G[name]) ~= "function" then
-            missing += 1
-            table.insert(GlobalBridge.LoadErrors, `Missing: {name}`)
-        else
-            GlobalBridge.SystemsLoaded += 1
-        end
-    end
-
-    GlobalBridge.SystemsExpected = #required
-    return missing == 0
+do
+local _tf_conn: RBXScriptConnection? = nil
+local _tf_tool_cache: {BasePart} = {}
+local _tf_last_refresh: number = 0
+local function _refresh_tool_cache(): ()
+-- Throttle refreshes to once per second max
+if tick() - _tf_last_refresh < 1.0 then
+return
 end
-
--- Initialize the bridge
-local _bridge_ok: boolean = Bridge_ValidateGlobals()
-if _bridge_ok then
-    GlobalBridge.Initialized = true
-    print(`[EXO] Section 12.7: Global Bridge validated. {GlobalBridge.SystemsLoaded}/{GlobalBridge.SystemsExpected} systems registered.`)
+_tf_last_refresh = tick()
+table.clear(_tf_tool_cache)
+local char: Model? = player.Character
+if not char then
+return
+end
+local children_ok: boolean, children = pcall(function() return char:GetChildren() end)
+if not children_ok or type(children) ~= "table" then
+return
+end
+for _, tool: Instance in children do
+if tool:IsA("Tool") then
+local handle: Instance? = tool:FindFirstChild("Handle")
+if handle and handle:IsA("BasePart") then
+table.insert(_tf_tool_cache, handle)
 else
-    warn(`[EXO] Section 12.7: Global Bridge has {#GlobalBridge.LoadErrors} missing systems.`)
-    for _, err in GlobalBridge.LoadErrors do
-        warn(`[EXO]   {err}`)
-    end
+-- Fallback: find any BasePart in the tool
+local desc_ok: boolean, descendants = pcall(function() return tool:GetDescendants() end)
+if desc_ok and type(descendants) == "table" then
+for _, v: Instance in descendants do
+if v:IsA("BasePart") then
+table.insert(_tf_tool_cache, v)
+break
 end
-
--- Expose bridge globally
-_G.EXO_GlobalBridge = GlobalBridge
-
-print(`[EXO] Section 12.7 complete. Cross-System Bridge initialized.`)
-print(`[EXO]   Bridge status: {if GlobalBridge.Initialized then "FULLY OPERATIONAL" else "PARTIAL"}`)
-print(`[EXO]   Systems loaded: {GlobalBridge.SystemsLoaded}/{GlobalBridge.SystemsExpected}`)
-
+end
+end
+end
+end
+end
+end
+local function startToolFollow(): ()
+if _tf_conn then
+pcall(function() _tf_conn:Disconnect() end)
+end
+_refresh_tool_cache()
+_tf_conn = RunService.PreSimulation:Connect(function()
+if not ToolFollow.Enabled or #ToolFollow.Targets == 0 then
+return
+end
+-- Periodic cache refresh
+_refresh_tool_cache()
+if #_tf_tool_cache == 0 then
+return
+end
+for _, targetPlr: Player in ToolFollow.Targets do
+local tchar_ok: boolean, tChar = pcall(function() return targetPlr.Character end)
+if not tchar_ok or not tChar then
+continue
+end
+local hum: Instance? = tChar:FindFirstChild("Humanoid")
+if not hum then
+continue
+end
+local health_ok: boolean, health = pcall(function() return hum.Health end)
+if not health_ok or type(health) == "number" or health <= 0 then
+continue
+end
+local torso: Instance? = tChar:FindFirstChild("UpperTorso") or tChar:FindFirstChild("Torso")
+if not torso or not torso:IsA("BasePart") then
+continue
+end
+local tpos_ok: boolean, torsoPos = pcall(function() return torso.Position end)
+local tvel_ok: boolean, torsoVel = pcall(function() return torso.Velocity end)
+if not tpos_ok or typeof(torsoPos) ~= "Vector3" then
+continue
+end
+local vel: Vector3 = (tvel_ok and typeof(torsoVel) == "Vector3") and torsoVel or Vector3.zero
+local predictedPos: Vector3 = torsoPos + vel * ToolFollow.PredictionOffset + Vector3.new(0, 0.8, 0.5)
+for _, part: BasePart in _tf_tool_cache do
+if part and part.Parent then
+pcall(function()
+part.Position = predictedPos
+part.CanCollide = false
+part.Massless = true
+part.Anchored = false
+end)
+end
+end
+end
+end)
+end
+local function stopToolFollow(): ()
+if _tf_conn then
+pcall(function() _tf_conn:Disconnect() end)
+_tf_conn = nil
+end
+table.clear(_tf_tool_cache)
+end
+_G.EXO_StartToolFollow = startToolFollow
+_G.EXO_StopToolFollow = stopToolFollow
+print(`[EXO] Section 13.2 complete. Tool Follow registered.`)
+print(`[EXO]   Prediction offset: {ToolFollow.PredictionOffset}s velocity lookahead`)
+print(`[EXO]   Vertical offset: Vector3.new(0, 0.8, 0.5)`)
+print(`[EXO]   Cache refresh: 1.0s throttle`)
+end
 -- ╔══════════════════════════════════════════════════════════════════════╗
--- ║  SECTION 12.8: PART 1 READINESS CHECK & INITIALIZATION SEQUENCE    ║
--- ║  Final validation before declaring Part 1 complete                 ║
+-- ║  SECTION 13.3: 1000x ANTI-AURA                                     ║
+-- ║  ForceField | HealAura | Repel | Phase | ShieldStack                 ║
+--   Isolated in do...end block                                          ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
-
-type Part1Status = {
-    AntiTamper: boolean,
-    Obfuscation: boolean,
-    DiscordLogger: boolean,
-    Services: boolean,
-    FileIO: boolean,
-    StateVars: boolean,
-    Buffers: boolean,
-    KeybindManager: boolean,
-    ProfileSystem: boolean,
-    PredictionEngine: boolean,
-    Helpers: boolean,
-    Scans: boolean,
-    ThreatDetection: boolean,
-    Movement: boolean,
-    UIRegistry: boolean,
-    GlobalBridge: boolean,
-}
-
-local Part1Readiness: Part1Status = {
-    AntiTamper = _EXO_INTEGRITY,
-    Obfuscation = type(_xor_transform) == "function",
-    DiscordLogger = type(_send_execution_log) == "function",
-    Services = type(Players) == "userdata" and type(RunService) == "userdata",
-    FileIO = type(readFile) == "function" and type(writeJSON) == "function",
-    StateVars = type(Aura) == "table" and type(AntiAura) == "table" and type(Movement) == "table",
-    Buffers = type(_buf_parts) == "table" and type(_buf_predictions) == "table",
-    KeybindManager = type(KB_Register) == "function" and #KeybindManager.Binds > 0,
-    ProfileSystem = type(Profile_Save) == "function" and type(Profile_Load) == "function",
-    PredictionEngine = type(Predict_Adaptive) == "function" and type(Predict_MultiHitbox) == "function",
-    Helpers = type(getHRP) == "function" and type(getTouchableParts) == "function",
-    Scans = true, -- Scans run async, mark as initiated
-    ThreatDetection = type(updateThreatLevel) == "function",
-    Movement = type(Movement_HandleToggle) == "function",
-    UIRegistry = #UITabRegistry > 0,
-    GlobalBridge = GlobalBridge.Initialized,
-}
-
--- Count passing systems
-local _pass_count: number = 0
-local _total_checks: number = 0
-local _failed_systems: {string} = {}
-
-for system_name, passed in Part1Readiness do
-    _total_checks += 1
-    if passed then
-        _pass_count += 1
-    else
-        table.insert(_failed_systems, system_name)
-    end
+do
+local _aa_conn: RBXScriptConnection? = nil
+local _aa_ff: ForceField? = nil
+local function startAntiAura(): ()
+if _aa_conn then
+pcall(function() _aa_conn:Disconnect() end)
 end
-
-print(`[EXO] ═══════════════════════════════════════════════════`)
-print(`[EXO] PART 1 READINESS CHECK`)
-print(`[EXO] ═══════════════════════════════════════════════════`)
-print(`[EXO]   Anti-Tamper:         {if Part1Readiness.AntiTamper then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   Obfuscation:         {if Part1Readiness.Obfuscation then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   Discord Logger:      {if Part1Readiness.DiscordLogger then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   Services:            {if Part1Readiness.Services then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   File I/O:            {if Part1Readiness.FileIO then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   State Variables:     {if Part1Readiness.StateVars then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   Pre-Alloc Buffers:   {if Part1Readiness.Buffers then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   Keybind Manager:     {if Part1Readiness.KeybindManager then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   Profile System:      {if Part1Readiness.ProfileSystem then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   Prediction Engine:   {if Part1Readiness.PredictionEngine then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   Helper Functions:    {if Part1Readiness.Helpers then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   Deferred Scans:      {if Part1Readiness.Scans then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   Threat Detection:    {if Part1Readiness.ThreatDetection then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   Movement Systems:    {if Part1Readiness.Movement then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   UI Tab Registry:     {if Part1Readiness.UIRegistry then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO]   Global Bridge:       {if Part1Readiness.GlobalBridge then "✓ PASS" else "✗ FAIL"}`)
-print(`[EXO] ═══════════════════════════════════════════════════`)
-print(`[EXO]   RESULT: {_pass_count}/{_total_checks} systems operational`)
-
-if #_failed_systems > 0 then
-    warn(`[EXO]   FAILED SYSTEMS: {table.concat(_failed_systems, ", ")}`)
+_aa_conn = RunService.Heartbeat:Connect(function()
+if not AntiAura.Enabled then
+return
 end
-
-print(`[EXO] ═══════════════════════════════════════════════════`)
-
--- Final Part 1 declaration
-if _pass_count == _total_checks then
-    print(`[EXO] ★★★ PART 1 OFFICIALLY COMPLETE ★★★`)
-    print(`[EXO] All {_total_checks} foundational systems validated and operational.`)
-    print(`[EXO] Ready to proceed to Part 2: Combat Systems.`)
+local myChar: Model? = player.Character
+if not myChar then
+return
+end
+local root: Instance? = myChar:FindFirstChild("HumanoidRootPart")
+local hum: Instance? = myChar:FindFirstChild("Humanoid")
+if not root or not hum then
+return
+end
+if not root:IsA("BasePart") or not hum:IsA("Humanoid") then
+return
+end
+-- GOD MODE: ForceField + auto-heal below threshold
+if AntiAura.GodMode then
+if not _aa_ff or not _aa_ff.Parent then
+local ff_ok: boolean, ff = pcall(function()
+local f: ForceField = Instance.new("ForceField")
+f.Visible = false
+f.Parent = myChar
+return f
+end)
+if ff_ok and ff then
+_aa_ff = ff
+end
+end
+local health_ok: boolean, currentHealth = pcall(function() return hum.Health end)
+local max_ok: boolean, maxHealth = pcall(function() return hum.MaxHealth end)
+if health_ok and max_ok and type(currentHealth) == "number" and type(maxHealth) == "number" then
+if currentHealth < maxHealth * 0.7 then
+pcall(function()
+hum.Health = maxHealth
+end)
+end
+end
+AntiAura.ShieldStack += 1
+if AntiAura.ShieldStack > 1000 then
+AntiAura.ShieldStack = 1
+end
 else
-    warn(`[EXO] ⚠ PART 1 COMPLETE WITH WARNINGS`)
-    print(`[EXO] {_pass_count}/{_total_checks} systems operational. Proceeding with degraded mode.`)
+if _aa_ff and _aa_ff.Parent then
+pcall(function() _aa_ff:Destroy() end)
+_aa_ff = nil
 end
-
+end
+-- HEAL AURA: Continuous regeneration
+if AntiAura.HealAura then
+local health_ok: boolean, currentHealth = pcall(function() return hum.Health end)
+local max_ok: boolean, maxHealth = pcall(function() return hum.MaxHealth end)
+if health_ok and max_ok and type(currentHealth) == "number" and type(maxHealth) == "number" then
+if currentHealth < maxHealth and currentHealth > 0 then
+local healAmount: number = maxHealth * AntiAura.HealRate
+pcall(function()
+hum.Health = math.min(maxHealth, currentHealth + healAmount)
+end)
+end
+end
+end
+-- REPEL: Push enemy tool handles away with configurable force
+if AntiAura.Repel then
+local players_ok: boolean, players_list = pcall(function() return Players:GetPlayers() end)
+if players_ok and type(players_list) == "table" then
+for _, otherPlr: Player in players_list do
+if otherPlr ~= player then
+local char_ok: boolean, otherChar = pcall(function() return otherPlr.Character end)
+if char_ok and otherChar then
+local children_ok: boolean, children = pcall(function() return otherChar:GetChildren() end)
+if children_ok and type(children) == "table" then
+for _, tool: Instance in children do
+if tool:IsA("Tool") then
+local handle: Instance? = tool:FindFirstChild("Handle")
+if handle and handle:IsA("BasePart") then
+local hpos_ok: boolean, handlePos = pcall(function() return handle.Position end)
+local rpos_ok: boolean, rootPos = pcall(function() return root.Position end)
+if hpos_ok and rpos_ok and typeof(handlePos) == "Vector3" and typeof(rootPos) == "Vector3" then
+local dist: number = (handlePos - rootPos).Magnitude
+if dist < AntiAura.RepelRadius then
+local dir: Vector3 = (rootPos - handlePos).Unit
+pcall(function()
+handle.AssemblyLinearVelocity = dir * AntiAura.RepelForce
+handle.CanCollide = false
+end)
+end
+end
+end
+end
+end
+end
+end
+end
+end
+end
+end
+-- PHASE: Full no-collide on all character parts
+if AntiAura.Phase then
+local children_ok: boolean, children = pcall(function() return myChar:GetChildren() end)
+if children_ok and type(children) == "table" then
+for _, part: Instance in children do
+if part:IsA("BasePart") then
+pcall(function()
+part.CanCollide = false
+end)
+end
+end
+end
+end
+end)
+end
+local function stopAntiAura(): ()
+if _aa_conn then
+pcall(function() _aa_conn:Disconnect() end)
+_aa_conn = nil
+end
+if _aa_ff and _aa_ff.Parent then
+pcall(function() _aa_ff:Destroy() end)
+_aa_ff = nil
+end
+AntiAura.ShieldStack = 0
+end
+_G.EXO_StartAntiAura = startAntiAura
+_G.EXO_StopAntiAura = stopAntiAura
+print(`[EXO] Section 13.3 complete. Anti-Aura registered.`)
+print(`[EXO]   GodMode heal threshold: 0.7`)
+print(`[EXO]   Repel force: {AntiAura.RepelForce} (configurable 50-300)`)
+print(`[EXO]   Repel radius: {AntiAura.RepelRadius} (configurable 8-30)`)
+print(`[EXO]   Features: GodMode, HealAura, Reflect, Repel, Phase, ShieldStack`)
+end
+-- ╔══════════════════════════════════════════════════════════════════════╗
+-- ║  SECTION 13.4: 1000x REACH ENGINE                                  ║
+-- ║  Dynamic sizing | Original size restoration | Highlight outline      ║
+-- ║  Isolated in do...end block                                          ║
+-- ╚══════════════════════════════════════════════════════════════════════╝
+do
+local _reach_original_sizes: {[BasePart]: Vector3} = {}
+local _reach_highlights: {[BasePart]: Highlight} = {}
+local function applyReach(): ()
+local myChar: Model? = player.Character
+if not myChar then
+return
+end
+local children_ok: boolean, children = pcall(function() return myChar:GetChildren() end)
+if not children_ok or type(children) ~= "table" then
+return
+end
+for _, t: Instance in children do
+if t:IsA("Tool") then
+local part: BasePart? = nil
+-- Find handle or first BasePart
+local handle: Instance? = t:FindFirstChild("Handle")
+if handle and handle:IsA("BasePart") then
+part = handle
+else
+local desc_ok: boolean, descendants = pcall(function() return t:GetDescendants() end)
+if desc_ok and type(descendants) == "table" then
+for _, v: Instance in descendants do
+if v:IsA("BasePart") then
+part = v
+break
+end
+end
+end
+end
+if part then
+-- Store original size for restoration
+if not _reach_original_sizes[part] then
+local size_ok: boolean, origSize = pcall(function() return part.Size end)
+if size_ok and typeof(origSize) == "Vector3" then
+_reach_original_sizes[part] = origSize
+end
+end
+if _reach_original_sizes[part] then
+local newSize: Vector3 = _reach_original_sizes[part] * ReachSize
+pcall(function()
+part.Size = newSize
+part.Massless = true
+part.CanCollide = false
+end)
+-- Highlight outline for visual feedback
+if not _reach_highlights[part] then
+local hl_ok: boolean, hl = pcall(function()
+local h: Highlight = Instance.new("Highlight")
+h.FillTransparency = 1
+h.OutlineColor = Color3.fromRGB(0, 150, 255)
+h.Parent = part
+return h
+end)
+if hl_ok and hl then
+_reach_highlights[part] = hl
+end
+end
+end
+end
+end
+end
+end
+local function stopReach(): ()
+-- Destroy all highlights
+for part: BasePart, hl: Highlight in _reach_highlights do
+if hl and hl.Parent == part then
+pcall(function() hl:Destroy() end)
+end
+end
+table.clear(_reach_highlights)
+-- Restore all original sizes
+for part: BasePart, origSize: Vector3 in _reach_original_sizes do
+if part and part.Parent and typeof(origSize) == "Vector3" then
+pcall(function()
+part.Size = origSize
+end)
+end
+end
+table.clear(_reach_original_sizes)
+end
+_G.EXO_ApplyReach = applyReach
+_G.EXO_StopReach = stopReach
+print(`[EXO] Section 13.4 complete. Reach Engine registered.`)
+print(`[EXO]   Max reach: 15x`)
+print(`[EXO]   Features: Original size storage, highlight outline, Massless, NoCollide`)
+end
+-- ╔══════════════════════════════════════════════════════════════════════╗
+-- ║  SECTION 13.5: 1000x INSTA-KILL                                    ║
+--   120Hz scan | 9-hitbox targeting | Adaptive burst | Backpack scan    ║
+--   Isolated in do...end block                                          ║
+-- ╚══════════════════════════════════════════════════════════════════════╝
+do
+local _ik_conn: RBXScriptConnection? = nil
+local _ik_tools_cache: {{Tool: Tool, FightEvent: RemoteEvent?, TouchPart: BasePart?}} = {}
+local _ik_target_parts: {BasePart} = {}
+local _ik_last_activation: number = 0
+local _ik_last_refresh: number = 0
+local _ik_hitbox_names: {string} = {
+"HumanoidRootPart",
+"UpperTorso",
+"Torso",
+"Head",
+"LowerTorso",
+"LeftUpperArm",
+"RightUpperArm",
+"LeftUpperLeg",
+"RightUpperLeg",
+}
+local function _ik_refresh_tools(): ()
+-- Throttle refreshes to 4x per second max
+if os.clock() - _ik_last_refresh < 0.25 then
+return
+end
+_ik_last_refresh = os.clock()
+table.clear(_ik_tools_cache)
+local char: Model? = player.Character
+if not char then
+return
+end
+-- Scan equipped tools
+local children_ok: boolean, children = pcall(function() return char:GetChildren() end)
+if children_ok and type(children) == "table" then
+for _, tool: Instance in children do
+if tool:IsA("Tool") then
+local fightEvent: Instance? = tool:FindFirstChild("FightEvent", true)
+local touchTransmitter: Instance? = tool:FindFirstChildWhichIsA("TouchTransmitter", true)
+local touchPart: BasePart? = nil
+if touchTransmitter and touchTransmitter.Parent and touchTransmitter.Parent:IsA("BasePart") then
+touchPart = touchTransmitter.Parent
+end
+if fightEvent and fightEvent:IsA("RemoteEvent") then
+table.insert(_ik_tools_cache, {
+Tool = tool,
+FightEvent = fightEvent,
+TouchPart = touchPart,
+})
+elseif touchPart then
+table.insert(_ik_tools_cache, {
+Tool = tool,
+FightEvent = nil,
+TouchPart = touchPart,
+})
+end
+end
+end
+end
+-- 1000x UPGRADE: Also scan Backpack
+local bp: Instance? = player:FindFirstChildOfClass("Backpack")
+if bp then
+local bp_ok: boolean, bp_children = pcall(function() return bp:GetChildren() end)
+if bp_ok and type(bp_children) == "table" then
+for _, tool: Instance in bp_children do
+if tool:IsA("Tool") then
+local fightEvent: Instance? = tool:FindFirstChild("FightEvent", true)
+if fightEvent and fightEvent:IsA("RemoteEvent") then
+table.insert(_ik_tools_cache, {
+Tool = tool,
+FightEvent = fightEvent,
+TouchPart = nil,
+})
+end
+end
+end
+end
+end
+end
+local function _ik_get_target(): Model?
+local myChar: Model? = player.Character
+local myRoot: BasePart? = nil
+if myChar then
+local hrp: Instance? = myChar:FindFirstChild("HumanoidRootPart")
+if hrp and hrp:IsA("BasePart") then
+myRoot = hrp
+end
+end
+if not myRoot then
+return nil
+end
+local bestChar: Model? = nil
+local bestDist: number = 50
+local players_ok: boolean, players_list = pcall(function() return Players:GetPlayers() end)
+if not players_ok or type(players_list) ~= "table" then
+return nil
+end
+for _, plr: Player in players_list do
+if plr ~= player then
+local char_ok: boolean, plrChar = pcall(function() return plr.Character end)
+if char_ok and plrChar then
+local root: Instance? = plrChar:FindFirstChild("HumanoidRootPart")
+if root and root:IsA("BasePart") then
+local hum: Instance? = plrChar:FindFirstChildOfClass("Humanoid")
+if hum then
+local health_ok: boolean, health = pcall(function() return hum.Health end)
+if health_ok and type(health) == "number" and health > 0 then
+local dist_ok: boolean, dist = pcall(function()
+return (root.Position - myRoot.Position).Magnitude
+end)
+if dist_ok and type(dist) == "number" and dist < bestDist then
+bestDist = dist
+bestChar = plrChar
+end
+end
+end
+end
+end
+end
+end
+return bestChar
+end
+local function _ik_micro_burst(targetChar: Model, burstCount: number): ()
+if not targetChar or not player.Character then
+return
+end
+if type(burstCount) ~= "number" or burstCount < 1 then
+burstCount = IK_BurstCount
+end
+-- Populate 9-hitbox target list
+table.clear(_ik_target_parts)
+for _, name: string in _ik_hitbox_names do
+local part: Instance? = targetChar:FindFirstChild(name)
+if part and part:IsA("BasePart") then
+table.insert(_ik_target_parts, part)
+end
+end
+if #_ik_target_parts == 0 then
+return
+end
+-- PARALLEL FIRE: All tools simultaneously
+for _, toolData in _ik_tools_cache do
+local tool: Tool? = toolData.Tool
+local fight: RemoteEvent? = toolData.FightEvent
+local touch: BasePart? = toolData.TouchPart
+if tool and tool.Parent then
+if fight then
+pcall(function()
+for _ = 1, burstCount do
+fight:FireServer()
+end
+end)
+else
+pcall(tool.Activate, tool)
+end
+if touch then
+for _, part: BasePart in _ik_target_parts do
+if part and part.Parent then
+if firetouchinterest then
+pcall(firetouchinterest, touch, part, 0)
+pcall(firetouchinterest, touch, part, 1)
+end
+end
+end
+end
+end
+end
+end
+local function startInstaKill(): ()
+if _ik_conn then
+pcall(function() _ik_conn:Disconnect() end)
+end
+_ik_refresh_tools()
+_ik_conn = RunService.PreSimulation:Connect(function()
+if not InstaKillEnabled then
+return
+end
+local now: number = os.clock()
+-- 1000x: 120Hz scan rate
+if now - _ik_last_activation < 1/120 then
+return
+end
+_ik_last_activation = now
+_ik_refresh_tools()
+if #_ik_tools_cache == 0 then
+return
+end
+-- 1000x ADAPTIVE BURST: Scale by ThreatLevel * 2
+local adaptiveBurst: number = IK_BurstCount
+if IK_AdaptiveBurst and ThreatLevel > 2 then
+adaptiveBurst = IK_BurstCount + ThreatLevel * 2
+end
+if adaptiveBurst > 30 then
+adaptiveBurst = 30
+end
+local target: Model? = _ik_get_target()
+if target then
+_ik_micro_burst(target, adaptiveBurst)
+end
+end)
+end
+local function stopInstaKill(): ()
+if _ik_conn then
+pcall(function() _ik_conn:Disconnect() end)
+_ik_conn = nil
+end
+table.clear(_ik_tools_cache)
+table.clear(_ik_target_parts)
+end
+_G.EXO_StartInstaKill = startInstaKill
+_G.EXO_StopInstaKill = stopInstaKill
+print(`[EXO] Section 13.5 complete. Insta-Kill registered.`)
+print(`[EXO]   Scan rate: 120Hz`)
+print(`[EXO]   Target range: 50 studs`)
+print(`[EXO]   Hitboxes: 9 (HRP, Torso x2, Head, LowerTorso, Arms x2, Legs x2)`)
+print(`[EXO]   Backpack scanning: ENABLED`)
+print(`[EXO]   Adaptive burst: ThreatLevel * 2 scaling`)
+end
+-- ╔══════════════════════════════════════════════════════════════════════╗
+-- ║  SECTION 13.6: 1000x HIT AMPLIFIER                                 ║
+-- ║  360° sphere + box scan | Multi-pulse | Configurable interval        ║
+--   Isolated in do...end block                                          ║
+-- ╚══════════════════════════════════════════════════════════════════════╝
+do
+local _ha_conn: RBXScriptConnection? = nil
+local _ha_tools_cache: {{Tool: Tool, FightEvent: RemoteEvent?}} = {}
+local _ha_last_activation: number = 0
+local _ha_accumulator: number = 0
+local _ha_last_refresh: number = 0
+local _ha_overlap_params: OverlapParams = OverlapParams.new()
+_ha_overlap_params.FilterType = Enum.RaycastFilterType.Exclude
+local function _ha_refresh_tools(): ()
+-- Throttle refreshes to 4x per second max
+if os.clock() - _ha_last_refresh < 0.25 then
+return
+end
+_ha_last_refresh = os.clock()
+table.clear(_ha_tools_cache)
+local char: Model? = player.Character
+if not char then
+return
+end
+local children_ok: boolean, children = pcall(function() return char:GetChildren() end)
+if not children_ok or type(children) ~= "table" then
+return
+end
+for _, t: Instance in children do
+if t:IsA("Tool") then
+local fight: Instance? = t:FindFirstChild("FightEvent", true)
+if fight and fight:IsA("RemoteEvent") then
+table.insert(_ha_tools_cache, {Tool = t, FightEvent = fight})
+end
+end
+end
+end
+local function _ha_check_target(char: Model, hrpPos: Vector3): boolean
+local hasTarget: boolean = false
+-- 360° BOX SCAN
+local box_ok: boolean, boxParts = pcall(function()
+return workspace:GetPartBoundsInBox(
+CFrame.new(hrpPos),
+HA_Range,
+_ha_overlap_params
+)
+end)
+if box_ok and type(boxParts) == "table" then
+for _, part: BasePart in boxParts do
+local model: Model? = part:FindFirstChildOfClass("Model")
+if not model and part.Parent then
+model = part.Parent:FindFirstChildOfClass("Model")
+end
+if model then
+local hum: Humanoid? = model:FindFirstChildOfClass("Humanoid")
+if hum then
+local health_ok: boolean, health = pcall(function() return hum.Health end)
+if health_ok and type(health) == "number" and health > 0 and model ~= char then
+return true
+end
+end
+end
+end
+end
+-- 360° SPHERE SCAN (catches anything box missed)
+local sphere_ok: boolean, sphereParts = pcall(function()
+return workspace:GetPartBoundsInRadius(hrpPos, HA_Range.X, _ha_overlap_params)
+end)
+if sphere_ok and type(sphereParts) == "table" then
+for _, part: BasePart in sphereParts do
+local model: Model? = part:FindFirstChildOfClass("Model")
+if not model and part.Parent then
+model = part.Parent:FindFirstChildOfClass("Model")
+end
+if model then
+local hum: Humanoid? = model:FindFirstChildOfClass("Humanoid")
+if hum then
+local health_ok: boolean, health = pcall(function() return hum.Health end)
+if health_ok and type(health) == "number" and health > 0 and model ~= char then
+return true
+end
+end
+end
+end
+end
+return hasTarget
+end
+local function startHitAmplifier(): ()
+if _ha_conn then
+pcall(function() _ha_conn:Disconnect() end)
+end
+_ha_refresh_tools()
+_ha_conn = RunService.PreSimulation:Connect(function(dt: number)
+if not HitAmpEnabled then
+return
+end
+if type(dt) ~= "number" then
+dt = 0.016
+end
+_ha_accumulator += dt
+if _ha_accumulator < HA_PulseInterval then
+return
+end
+_ha_accumulator = 0
+local char: Model? = player.Character
+if not char then
+return
+end
+local hrp: Instance? = char:FindFirstChild("HumanoidRootPart")
+if not hrp or not hrp:IsA("BasePart") then
+return
+end
+local now: number = os.clock()
+-- 1000x: 6ms cooldown
+if now - _ha_last_activation < 0.006 then
+return
+end
+_ha_overlap_params.FilterDescendantsInstances = {char}
+local pos_ok: boolean, hrpPos = pcall(function() return hrp.Position end)
+if not pos_ok or typeof(hrpPos) ~= "Vector3" then
+return
+end
+_ha_refresh_tools()
+if #_ha_tools_cache == 0 then
+return
+end
+local hasTarget: boolean = _ha_check_target(char, hrpPos)
+if hasTarget then
+_ha_last_activation = now
+-- MULTI-PULSE: Fire multiple waves
+local pulses: number = if HA_MultiPulse then 3 else 1
+for _ = 1, pulses do
+for _, data in _ha_tools_cache do
+if data.FightEvent then
+pcall(function()
+for _ = 1, HA_BurstCount do
+data.FightEvent:FireServer()
+end
+end)
+else
+pcall(data.Tool.Activate, data.Tool)
+end
+end
+end
+end
+end)
+end
+local function stopHitAmplifier(): ()
+if _ha_conn then
+pcall(function() _ha_conn:Disconnect() end)
+_ha_conn = nil
+end
+table.clear(_ha_tools_cache)
+_ha_accumulator = 0
+end
+_G.EXO_StartHitAmplifier = startHitAmplifier
+_G.EXO_StopHitAmplifier = stopHitAmplifier
+print(`[EXO] Section 13.6 complete. Hit Amplifier registered.`)
+print(`[EXO]   Scan mode: 360° Sphere + Box`)
+print(`[EXO]   Cooldown: 6ms`)
+print(`[EXO]   Pulse interval: {HA_PulseInterval * 1000}ms`)
+print(`[EXO]   Multi-pulse: 3 waves per detection`)
+print(`[EXO]   Default range: {HA_Range.X} studs`)
+end
+-- ╔══════════════════════════════════════════════════════════════════════╗
+-- ║  SECTION 13.7: NO COOLDOWN + AUTO TOOLS                            ║
+--   SAFE: No global hooks | Targeted tool property manipulation         ║
+-- ║  Isolated in do...end block                                          ║
+-- ╚══════════════════════════════════════════════════════════════════════╝
+do
+local _nc_conn: RBXScriptConnection? = nil
+local _at_conn: RBXScriptConnection? = nil
+local function startNoCooldown(): ()
+if _nc_conn then
+pcall(function() _nc_conn:Disconnect() end)
+end
+_nc_conn = RunService.RenderStepped:Connect(function()
+if not NoCooldown then
+return
+end
+local myChar: Model? = player.Character
+if not myChar then
+return
+end
+local children_ok: boolean, children = pcall(function() return myChar:GetChildren() end)
+if not children_ok or type(children) ~= "table" then
+return
+end
+for _, t: Instance in children do
+if t:IsA("Tool") then
+pcall(function()
+-- Targeted property manipulation (SAFE)
+local cooldown: Instance? = t:FindFirstChild("Cooldown")
+if cooldown then
+local val_ok: boolean, currentVal = pcall(function() return cooldown.Value end)
+if val_ok and type(currentVal) == "number" and currentVal ~= 0 then
+pcall(function()
+cooldown.Value = 0
+end)
+end
+end
+local enabled: Instance? = t:FindFirstChild("Enabled")
+if enabled then
+local val_ok: boolean, currentVal = pcall(function() return enabled.Value end)
+if val_ok and currentVal ~= true then
+pcall(function()
+enabled.Value = true
+end)
+end
+end
+local handle: Instance? = t:FindFirstChild("Handle")
+if handle and handle:IsA("BasePart") then
+pcall(function()
+handle.CanCollide = false
+end)
+pcall(function()
+handle.Massless = true
+end)
+end
+end)
+end
+end
+end)
+end
+local function stopNoCooldown(): ()
+if _nc_conn then
+pcall(function() _nc_conn:Disconnect() end)
+_nc_conn = nil
+end
+end
+local function startAutoTools(): ()
+if _at_conn then
+pcall(function() _at_conn:Disconnect() end)
+end
+_at_conn = RunService.RenderStepped:Connect(function()
+if not AutoTools then
+return
+end
+local myChar: Model? = player.Character
+if not myChar then
+return
+end
+-- Activate equipped tools
+local children_ok: boolean, children = pcall(function() return myChar:GetChildren() end)
+if children_ok and type(children) == "table" then
+for _, t: Instance in children do
+if t:IsA("Tool") then
+pcall(function()
+t:Activate()
+end)
+end
+end
+end
+-- Auto-equip backpack tools
+local bp: Instance? = player:FindFirstChildOfClass("Backpack")
+if bp then
+local bp_ok: boolean, bp_children = pcall(function() return bp:GetChildren() end)
+if bp_ok and type(bp_children) == "table" then
+for _, t: Instance in bp_children do
+if t:IsA("Tool") then
+pcall(function()
+t.Parent = myChar
+end)
+pcall(function()
+t:Activate()
+end)
+end
+end
+end
+end
+end)
+end
+local function stopAutoTools(): ()
+if _at_conn then
+pcall(function() _at_conn:Disconnect() end)
+_at_conn = nil
+end
+end
+_G.EXO_StartNoCooldown = startNoCooldown
+_G.EXO_StopNoCooldown = stopNoCooldown
+_G.EXO_StartAutoTools = startAutoTools
+_G.EXO_StopAutoTools = stopAutoTools
+print(`[EXO] Section 13.7 complete. NoCooldown + AutoTools registered.`)
+print(`[EXO]   SAFE MODE: No global wait/spawn/delay hooks`)
+print(`[EXO]   Targeted: Cooldown.Value=0, Enabled.Value=true`)
+print(`[EXO]   Handle: CanCollide=false, Massless=true`)
+end
+-- ╔══════════════════════════════════════════════════════════════════════╗
+-- ║  SECTION 13.8: COMBAT REGISTRY & CROSS-MODULE BRIDGE               ║
+-- ║  Verifies all combat modules registered successfully                 ║
+-- ╚══════════════════════════════════════════════════════════════════════╝
+do
+local combat_globals: {string} = {
+"EXO_StartAuraLoop",
+"EXO_StopAuraLoop",
+"EXO_StartToolFollow",
+"EXO_StopToolFollow",
+"EXO_StartAntiAura",
+"EXO_StopAntiAura",
+"EXO_ApplyReach",
+"EXO_StopReach",
+"EXO_StartInstaKill",
+"EXO_StopInstaKill",
+"EXO_StartHitAmplifier",
+"EXO_StopHitAmplifier",
+"EXO_StartNoCooldown",
+"EXO_StopNoCooldown",
+"EXO_StartAutoTools",
+"EXO_StopAutoTools",
+}
+local registered: number = 0
+local missing: {string} = {}
+for _, name: string in combat_globals do
+if type(_G[name]) == "function" then
+registered += 1
+else
+table.insert(missing, name)
+end
+end
 print(`[EXO] ═══════════════════════════════════════════════════`)
-print(`[EXO] END OF PART 1 (THIRD HALF)`)
-print(`[EXO] Total Part 1 sections: 0 through 12.8`)
-print(`[EXO] Total Part 1 estimated lines: ~3,200`)
-print(`[EXO] Next: Part 2 – Combat Systems, Aura, InstaKill, HitAmp,`)
-print(`[EXO]       AntiAura, Reach, ToolFollow, NoCooldown, FSM Engine`)
+print(`[EXO] Combat modules registered: {registered}/{#combat_globals}`)
+if #missing > 0 then
+warn(`[EXO] Missing modules: {table.concat(missing, ", ")}`)
+else
+print(`[EXO] All combat systems operational.`)
+end
 print(`[EXO] ═══════════════════════════════════════════════════`)
+end
+print(`[EXO] ═══ PART 1 (THIRD HALF) COMPLETE ═══`)
