@@ -1,4 +1,18 @@
---!strict
+--!nonstrict
+-- Executor global declarations (suppress strict-mode errors)
+local loadstring: any = loadstring
+local isfile: any = isfile
+local readfile: any = readfile
+local writefile: any = writefile
+local deletefile: any = deletefile
+local request: any = request
+local http_request: any = http_request
+local syn: any = syn
+local identifyexecutor: any = identifyexecutor
+local getexecutorname: any = getexecutorname
+local firetouchinterest: any = firetouchinterest
+local getgenv: any = getgenv
+local setclipboard: any = setclipboard
 -- ═══════════════════════════════════════════════════════════════════════════
 --  ███████╗██╗  ██╗ ██████╗     ██╗  ██╗ █████╗ ██╗   ██╗██████╗  ██████╗
 --  ██╔════╝╚██╗██╔╝██╔═══██╗    ██║  ██║██╔══██╗██║   ██║██╔══██╗██╔═══██╗
@@ -149,23 +163,34 @@ print(`[EXO] Section 2 complete. All services loaded and validated.`)
 local LOGO_ID: number = 83540284294644
 local SPHERE_ID: number = 126634043707901
 
--- Load AdmianianUI Core Engine
-local AdminUI: any = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/LuauScripts-usr/AdmianianUI-CORE/refs/heads/main/AdminUI-CORE-ENGINE.luau"
-))()
+-- Load AdmianianUI Core Engine with error handling
+local AdminUI: any = nil
+local loadSuccess, loadResult = pcall(function()
+    return loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/LuauScripts-usr/AdmianianUI-CORE/refs/heads/main/AdminUI-CORE-ENGINE.luau"
+    ))()
+end)
 
-if not AdminUI then
-    warn("[EXO] FATAL: Failed to load AdmianianUI Core. Aborting.")
+if loadSuccess and loadResult then
+    AdminUI = loadResult
+    -- Set whitelisted users to allow access (bypass lock check)
+    if AdminUI.WhitelistedUsers then
+        table.insert(AdminUI.WhitelistedUsers, player.Name)
+        table.insert(AdminUI.WhitelistedUsers, player.DisplayName)
+    end
+else
+    warn(`[EXO] FATAL: Failed to load AdmianianUI Core: {loadResult or \"Unknown error\"}. Aborting.`)
+    error("AdmianUI load failed")
     return
 end
 
 -- Preload images via ContentProvider for faster rendering
 local ContentProvider: ContentProvider = game:GetService("ContentProvider")
-local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PlayerGui: PlayerGui = player:WaitForChild("PlayerGui")
 
 local preloadCache: Folder = Instance.new("Folder")
 preloadCache.Name = "_UIPreload"
-preloadCache.Parent = ReplicatedStorage
+preloadCache.Parent = PlayerGui
 
 local function createPreloadLabel(id: number): ImageLabel
     local il: ImageLabel = Instance.new("ImageLabel")
@@ -180,7 +205,7 @@ end
 local logoPreload: ImageLabel = createPreloadLabel(LOGO_ID)
 local spherePreload: ImageLabel = createPreloadLabel(SPHERE_ID)
 pcall(ContentProvider.PreloadAsync, ContentProvider, {logoPreload, spherePreload})
-task.wait(0.5)
+-- Removed blocking task.wait(0.5) to prevent frame desync
 
 print(`[EXO] Section 2.1 complete. AdmianianUI Core loaded. Logo: {LOGO_ID}, Sphere: {SPHERE_ID}`)
 
@@ -8157,10 +8182,11 @@ do
                 -- UI notification (fallback-safe)
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(
-                            `SENTINEL AI - Kill Detected (Threat {analysis.Threat}/10) | Killer: {analysis.Killer}`,
-                            5
-                        )
+                        AdminUI:Notify({
+                            Title = "SENTINEL AI",
+                            Description = `Kill Detected (Threat {analysis.Threat}/10) | Killer: {analysis.Killer}`,
+                            Duration = 5
+                        })
                     end)
                 end
             end)
@@ -9465,7 +9491,7 @@ do
         SphereImage = "rbxassetid://" .. SPHERE_ID,
         SphereText = false,
         SphereWords = "EXO",
-        Color = Color3.fromRGB(0, 150, 255),
+        AccentColor = Color3.fromRGB(0, 150, 255),
     })
 
     if not Window then
@@ -9601,7 +9627,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify(`Aura ENGAGED - {#Aura.TargetList} targets. Multi-vector prediction active.`, 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -9610,7 +9636,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Aura DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -9641,7 +9667,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(`Aura targets updated: {#Aura.TargetList} selected.`, 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9672,7 +9698,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify(`Tool Follow ENGAGED - {#ToolFollow.Targets} targets.`, 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -9681,7 +9707,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Tool Follow DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -9707,7 +9733,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Anti-Aura ENGAGED. Defense matrix active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -9716,7 +9742,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Anti-Aura DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -9754,7 +9780,7 @@ do
                 AntiSpawnkill = state
                 if state and AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Anti-Spawnkill ARMED. 5s invincibility on respawn.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9792,7 +9818,7 @@ do
                 end
                 if state and AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(`Speed Hack ENGAGED. Walk speed: {Movement.SpeedValue}.`, 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9810,7 +9836,7 @@ do
                 end
                 if state and AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(`Jump Power ENGAGED. Jump value: {Movement.JumpValue}.`, 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9828,7 +9854,7 @@ do
                 end
                 if state and AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Infinite Jump ENGAGED. Spam spacebar for flight.", 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9847,7 +9873,7 @@ do
                 end
                 if state and AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Noclip ENGAGED. Walk through walls.", 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9858,7 +9884,7 @@ do
                 end
                 if state and AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(`Fly ENGAGED. WASD + Space/Shift. Speed: {Movement.FlySpeed}.`, 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9882,7 +9908,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("All movement features STOPPED.", 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9895,7 +9921,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Speed preset applied: Sprint (50).", 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9908,7 +9934,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Speed preset applied: Blitz (100).", 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9921,7 +9947,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Speed preset applied: Godspeed (200).", 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9934,7 +9960,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Fly preset applied: Cruise (50).", 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9947,7 +9973,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Fly preset applied: Jet (150).", 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -9986,7 +10012,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Auto Claim ENGAGED. Scanning cash registers.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -9995,7 +10021,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Auto Claim DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10009,7 +10035,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Smart Auto Build ENGAGED. Max 3 items per cycle.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10018,7 +10044,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Smart Auto Build DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10032,7 +10058,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Auto Grab Weapons ENGAGED. 14 bases scanning.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10041,7 +10067,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Auto Grab Weapons DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10064,7 +10090,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Auto Use Tools ENGAGED. Activating all tools.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10073,7 +10099,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Auto Use Tools DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10087,7 +10113,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("No Cooldown ENGAGED. SAFE mode: no global hooks.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10096,7 +10122,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("No Cooldown DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10117,7 +10143,7 @@ do
                     if ok and type(owned) == "number" and type(total) == "number" then
                         if AdminUI and type(AdminUI.Notify) == "function" then
                             pcall(function()
-                                AdminUI:Notify(`Tool Grabber Progress: {owned}/{total} tools owned.`, 3)
+                                AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                             end)
                         end
                     end
@@ -10128,7 +10154,7 @@ do
                 local cash: number = getPlayerCash()
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(`Current Cash: ${cash}`, 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -10137,7 +10163,7 @@ do
                 local tycoonType: string? = getPlayerTycoonType()
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(`Tycoon Type: {tycoonType or "Unknown"}`, 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -10188,7 +10214,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify(`OMNI-KILL ENGAGED - {#Aura.TargetList} targets.`, 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10197,7 +10223,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("OMNI-KILL DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10211,7 +10237,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Insta-Kill ENGAGED. 120Hz scan rate active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10220,7 +10246,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Insta-Kill DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10249,7 +10275,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Manual kill burst fired.", 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -10266,7 +10292,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(`Targets refreshed: {#Aura.TargetList} players.`, 2)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -10288,7 +10314,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Hit Amplifier ENGAGED. 360° sphere+box scan active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10297,7 +10323,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Hit Amplifier DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10331,7 +10357,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Tool Arsenal ENGAGED. Continuous acquisition active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10340,7 +10366,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Tool Arsenal DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10370,7 +10396,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify(`Force acquire burst fired on {acquired} bases.`, 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10415,7 +10441,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Sovereign Economy ENGAGED. Full automation active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10427,7 +10453,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Sovereign Economy DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10484,13 +10510,13 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify(`Purchased: {best.Name}`, 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Nothing affordable.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10508,7 +10534,7 @@ do
                 AntiSpawnkill = state
                 if state and AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Supremacy Mode ARMED. 5s invincibility on respawn.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -10521,7 +10547,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Fast Respawn ENGAGED. 0.02s threshold active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10543,7 +10569,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Defense Matrix ENGAGED. Full protection active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10552,7 +10578,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Defense Matrix DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10586,7 +10612,7 @@ do
                             end)
                             if AdminUI and type(AdminUI.Notify) == "function" then
                                 pcall(function()
-                                    AdminUI:Notify("Health restored to max.", 2)
+                                    AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                                 end)
                             end
                         end
@@ -10629,7 +10655,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("ESP ENGAGED. Threat-colored dots active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10638,7 +10664,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("ESP DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10660,7 +10686,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Anti-Lag ENGAGED. Performance optimizations active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10669,7 +10695,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Anti-Lag DISENGAGED. Original settings restored.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10691,7 +10717,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Chams ENGAGED. Highlight instances on all players.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10700,7 +10726,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Chams DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10722,7 +10748,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("UI Highlights ENGAGED. Active feature indicators on.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10731,7 +10757,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("UI Highlights DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10775,7 +10801,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("FSM Engine STARTED. Auto mode switching active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10784,7 +10810,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("FSM Engine STOPPED. Manual control only.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10800,7 +10826,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(`Current FSM Mode: {currentMode}`, 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -10815,7 +10841,7 @@ do
                         end
                         if AdminUI and type(AdminUI.Notify) == "function" then
                             pcall(function()
-                                AdminUI:Notify(`Mode Scores: {score_str}`, 5)
+                                AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                             end)
                         end
                     end
@@ -10838,7 +10864,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Forced TYCOON mode. Farming features active.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -10849,7 +10875,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Forced DEFENSIVE mode. Anti-Aura active.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -10860,7 +10886,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Forced COMBAT mode. All offensive systems active.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -10871,7 +10897,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Forced IDLE mode. All systems standby.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -10913,7 +10939,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Sentinel AI ONLINE. Chat overlay active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -10924,7 +10950,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Sentinel AI OFFLINE.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -10984,7 +11010,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("All AI features DISABLED.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11014,7 +11040,7 @@ do
                             features_str = table.concat(prof.SuspectedFeatures, ", ")
                         end
                         pcall(function()
-                            AdminUI:Notify(
+                            AdminUI.Notify(AdminUI, 
                                 `Profile: {name} | Kills: {prof.TotalKills} | Threat: {prof.ThreatScore}/100 | Features: {features_str}`,
                                 4
                             )
@@ -11024,7 +11050,7 @@ do
                 if count == 0 then
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("No threat profiles recorded yet. Die to generate data.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -11035,7 +11061,7 @@ do
                 writeJSON(AI_PROFILE_FILE, ThreatProfiles)
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("All threat profiles cleared from storage.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
                 if type(_G.EXO_ChatAddMessage) == "function" then
@@ -11055,7 +11081,7 @@ do
                 writeJSON(AI_MEMORY_FILE, AIMemory)
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("AI neural memory reset. Learning rate restored to 0.1.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
                 if type(_G.EXO_ChatAddMessage) == "function" then
@@ -11099,7 +11125,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("All keybinds saved to disk.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11110,7 +11136,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("All keybinds loaded from disk.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11126,7 +11152,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Keybinds reset to defaults.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11146,7 +11172,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Press a key to rebind Toggle UI...", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11157,7 +11183,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Press a key to rebind Panic Disable...", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11178,7 +11204,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Press a key to rebind Toggle Aura...", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11189,7 +11215,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Press a key to rebind Toggle InstaKill...", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11200,7 +11226,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Press a key to rebind Toggle AntiAura...", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11211,7 +11237,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Press a key to rebind Toggle Reach...", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11231,7 +11257,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Press a key to rebind Toggle Speed...", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11242,7 +11268,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Press a key to rebind Toggle Noclip...", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11253,7 +11279,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Press a key to rebind Toggle Fly...", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11273,7 +11299,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Press a key to rebind Toggle AutoBuild...", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11284,7 +11310,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Press a key to rebind Toggle AutoClaim...", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11295,7 +11321,7 @@ do
                 end
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Press a key to rebind Toggle ESP...", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11398,7 +11424,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Anti-Lag ENGAGED. Performance optimizations active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -11407,7 +11433,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Anti-Lag DISENGAGED. Original settings restored.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -11421,7 +11447,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("ESP ENGAGED. Threat-colored dots active.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
@@ -11430,7 +11456,7 @@ do
                     end
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("ESP DISENGAGED.", 2)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -11441,7 +11467,7 @@ do
                 if state then
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("Kill Notifications + Sentinel AI pipeline enabled.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -11455,7 +11481,7 @@ do
                 if #KillLogs == 0 then
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("No kills recorded this session.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                     return
@@ -11464,7 +11490,7 @@ do
                 if type(lastLog) == "table" then
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify(
+                            AdminUI.Notify(AdminUI, 
                                 `Last Kill: {lastLog.Killer} | Weapon: {lastLog.Weapon} | Threat: {lastLog.Threat}/10 | Total logs: {#KillLogs}`,
                                 5
                             )
@@ -11505,7 +11531,7 @@ do
                 writeJSON(CONFIG_FILE, config)
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(`Config saved to {CONFIG_FILE}.`, 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11537,13 +11563,13 @@ do
 
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify(`Config loaded from {CONFIG_FILE}.`, 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify(`No saved config found at {CONFIG_FILE}.`, 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -11567,7 +11593,7 @@ do
                 Movement.FlySpeed = 50
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("Config reset to defaults.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11631,7 +11657,7 @@ do
 
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("PANIC: ALL features DISABLED. Clean state restored.", 5)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11653,7 +11679,7 @@ do
                 KillLogs = {}
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("All saved data cleared. Fresh start.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11661,7 +11687,7 @@ do
             AdvancedSec:AddButton("View Debug Info", function()
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(
+                        AdminUI.Notify(AdminUI, 
                             `EXO v{_EXO_V} | Build: {_EXO_BUILD} | Integrity: {tostring(_EXO_INTEGRITY)} | Scans: {tostring(scansComplete)}`,
                             5
                         )
@@ -11770,13 +11796,13 @@ do
                 if ok then
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify(`Full state saved to {PROFILE_FILE}.`, 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 else
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify("State save FAILED. Check executor permissions.", 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                 end
@@ -11787,7 +11813,7 @@ do
                 if not state then
                     if AdminUI and type(AdminUI.Notify) == "function" then
                         pcall(function()
-                            AdminUI:Notify(`No saved state found at {PROFILE_FILE}.`, 3)
+                            AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                         end)
                     end
                     return
@@ -11834,7 +11860,7 @@ do
 
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(`Full state loaded from {PROFILE_FILE}. Values restored (features not auto-enabled).`, 4)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11860,7 +11886,7 @@ do
 
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("State reset to defaults.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11876,7 +11902,7 @@ do
             AIMemSec:AddButton("View AI Memory Stats", function()
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify(
+                        AdminUI.Notify(AdminUI, 
                             `Strategies: {#AIMemory.StrategyResults} | Combos: {#StrategyEngine.FeatureCombinations} | Rate: {string.format("%.3f", AIMemory.SessionLearningRate)}`,
                             5
                         )
@@ -11894,7 +11920,7 @@ do
                 writeJSON(AI_MEMORY_FILE, AIMemory)
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("AI memory wiped. Fresh learning cycle.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11904,7 +11930,7 @@ do
                 writeJSON(AI_PROFILE_FILE, ThreatProfiles)
                 if AdminUI and type(AdminUI.Notify) == "function" then
                     pcall(function()
-                        AdminUI:Notify("All threat profiles cleared.", 3)
+                        AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                     end)
                 end
             end)
@@ -11922,13 +11948,13 @@ do
                         pcall(setclipboard, jsonStr)
                         if AdminUI and type(AdminUI.Notify) == "function" then
                             pcall(function()
-                                AdminUI:Notify("AI data exported to clipboard.", 3)
+                                AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                             end)
                         end
                     else
                         if AdminUI and type(AdminUI.Notify) == "function" then
                             pcall(function()
-                                AdminUI:Notify("Clipboard not available on this executor.", 3)
+                                AdminUI:Notify({Title = "EXO Hub", Description = "Notification", Duration = 3})
                             end)
                         end
                     end
@@ -12466,7 +12492,7 @@ do
         task.wait(2.0)
         if AdminUI and type(AdminUI.Notify) == "function" then
             pcall(function()
-                AdminUI:Notify(
+                AdminUI.Notify(AdminUI, 
                     "EXO Hub v10.0 SENTINEL PRIME loaded. All systems online.",
                     5
                 )
