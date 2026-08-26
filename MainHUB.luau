@@ -140,9 +140,59 @@ end
 
 print(`[EXO] Section 2 complete. All services loaded and validated.`)
 
+
 -- ╔══════════════════════════════════════════════════════════════════════╗
--- ║  SECTION 3: DISCORD WEBHOOK EXECUTION LOGGER                       ║
--- ║  Sends embed on every execution. Non-sensitive data only.          ║
+-- ║  SECTION 2.1: ADMIANIANUI CORE LIBRARY LOADER                        ║
+-- ║  Loads AdmianianUI from GitHub with image preloading                 ║
+-- ╚══════════════════════════════════════════════════════════════════════╝
+local LOGO_ID: number = 83540284294644
+local SPHERE_ID: number = 126634043707901
+
+-- Load AdmianianUI Core Engine
+local AdminUI: any = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/LuauScripts-usr/AdmianianUI-CORE/refs/heads/main/AdminUI-CORE-ENGINE.luau"
+))()
+
+if not AdminUI then
+    warn("[EXO] FATAL: Failed to load AdmianianUI Core. Aborting.")
+    return
+end
+
+-- Preload images via ContentProvider for faster rendering
+local ContentProvider: ContentProvider = game:GetService("ContentProvider")
+local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local preloadCache: Folder = Instance.new("Folder")
+preloadCache.Name = "_UIPreload"
+preloadCache.Parent = ReplicatedStorage
+
+local function createPreloadLabel(id: number): ImageLabel
+    local il: ImageLabel = Instance.new("ImageLabel")
+    il.Image = "rbxassetid://" .. id
+    il.Size = UDim2.fromScale(0, 0)
+    il.BackgroundTransparency = 1
+    il.Visible = false
+    il.Parent = preloadCache
+    return il
+end
+
+local logoPreload: ImageLabel = createPreloadLabel(LOGO_ID)
+local spherePreload: ImageLabel = createPreloadLabel(SPHERE_ID)
+pcall(ContentProvider.PreloadAsync, ContentProvider, {logoPreload, spherePreload})
+task.wait(0.5)
+
+print(`[EXO] Section 2.1 complete. AdmianianUI Core loaded. Logo: {LOGO_ID}, Sphere: {SPHERE_ID}`)
+
+-- Cleanup preload cache after 6 seconds
+task.delay(6, function()
+    if preloadCache and preloadCache.Parent then
+        preloadCache:Destroy()
+    end
+end)
+
+-- ╔══════════════════════════════════════════════════════════════════════╗
+-- ║  SECTION 3: DISCORD WEBHOOK EXECUTION LOGGER                         ║
+-- ║  Sends embed on every execution. Non-sensitive data only.            ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
 
 -- Webhook URL assembled via split to avoid plain-text scraping
@@ -9401,6 +9451,10 @@ do
     local Window = AdminUI:CreateWindow({
         Title = "EXO Hub v10.0",
         Subtitle = "SENTINEL PRIME | OMNISCIENT | LUAU",
+        Logo = "rbxassetid://" .. LOGO_ID,
+        SphereImage = "rbxassetid://" .. SPHERE_ID,
+        SphereText = false,
+        SphereWords = "EXO",
         Color = Color3.fromRGB(0, 150, 255),
     })
 
@@ -9417,6 +9471,88 @@ do
     print(`[EXO]   Window title: EXO Hub v10.0`)
     print(`[EXO]   Subtitle: SENTINEL PRIME | OMNISCIENT | LUAU`)
     print(`[EXO]   Accent color: RGB(0, 150, 255)`)
+    print(`[EXO]   Logo ID: {LOGO_ID}`)
+    print(`[EXO]   Sphere ID: {SPHERE_ID}`)
+    
+    -- Image injection fix: Force-inject logo and sphere images after UI renders
+    task.delay(0.3, function()
+        local function getRootGui(): GuiBase?
+            if Window.Frame then return Window.Frame :: any end
+            if Window.Instance then return Window.Instance :: any end
+            if Window.GUI then return Window.GUI :: any end
+            if Window.ScreenGui then return Window.ScreenGui :: any end
+            local pg = player:WaitForChild("PlayerGui")
+            for _, child in pg:GetChildren() do
+                if child:IsA("ScreenGui") then
+                    return child
+                end
+            end
+            return nil
+        end
+        
+        local function classifyImage(name: string): string?
+            local n = name:lower()
+            if n:find("logo") or n:find("hub") or n:find("brand") then
+                return "logo"
+            elseif n:find("sphere") or n:find("icon") or n:find("ball") 
+                or n:find("circle") or n:find("avatar") then
+                return "sphere"
+            end
+            return nil
+        end
+        
+        local function injectImages(root: GuiBase?)
+            if not root then return end
+            for _, obj in root:GetDescendants() do
+                if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+                    local role = classifyImage(obj.Name)
+                    obj.Visible = true
+                    obj.ImageTransparency = 0
+                    if obj.AbsoluteSize.X < 1 or obj.AbsoluteSize.Y < 1 then
+                        obj.Size = UDim2.fromOffset(48, 48)
+                    end
+                    if role == "logo" then
+                        obj.Image = "rbxassetid://" .. LOGO_ID
+                    elseif role == "sphere" then
+                        obj.Image = "rbxassetid://" .. SPHERE_ID
+                    elseif obj.Image == "" then
+                        obj.Image = "rbxassetid://" .. LOGO_ID
+                    end
+                end
+            end
+        end
+        
+        -- Multi-frame retry for mobile texture pipeline
+        local attempts = 0
+        local maxAttempts = 6
+        local function retryInject()
+            attempts += 1
+            local root = getRootGui()
+            injectImages(root)
+            if attempts < maxAttempts then
+                task.delay(0.25, retryInject)
+            else
+                -- Final pass with rbxthumb:// fallback
+                if root then
+                    for _, obj in root:GetDescendants() do
+                        if (obj:IsA("ImageLabel") or obj:IsA("ImageButton")) 
+                            and (obj.Image == "" or obj.ImageTransparency > 0) then
+                            local role = classifyImage(obj.Name)
+                            obj.ImageTransparency = 0
+                            obj.Visible = true
+                            if role == "sphere" then
+                                obj.Image = "rbxthumb://type=Asset&id=" .. SPHERE_ID .. "&w=150&h=150"
+                            else
+                                obj.Image = "rbxthumb://type=Asset&id=" .. LOGO_ID .. "&w=150&h=150"
+                            end
+                        end
+                    end
+                end
+                print(`[EXO] [ImageFix] All {attempts} injection passes complete.`)
+            end
+        end
+        retryInject()
+    end)
 end
 
 -- ╔══════════════════════════════════════════════════════════════════════╗
