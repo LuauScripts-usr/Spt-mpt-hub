@@ -1,4 +1,18 @@
---!strict
+--!nonstrict
+-- Executor global declarations (suppress strict-mode errors)
+local loadstring: any = loadstring
+local isfile: any = isfile
+local readfile: any = readfile
+local writefile: any = writefile
+local deletefile: any = deletefile
+local request: any = request
+local http_request: any = http_request
+local syn: any = syn
+local identifyexecutor: any = identifyexecutor
+local getexecutorname: any = getexecutorname
+local firetouchinterest: any = firetouchinterest
+local getgenv: any = getgenv
+local setclipboard: any = setclipboard
 -- ═══════════════════════════════════════════════════════════════════════════
 --  ███████╗██╗  ██╗ ██████╗     ██╗  ██╗ █████╗ ██╗   ██╗██████╗  ██████╗
 --  ██╔════╝╚██╗██╔╝██╔═══██╗    ██║  ██║██╔══██╗██║   ██║██╔══██╗██╔═══██╗
@@ -172,11 +186,11 @@ end
 
 -- Preload images via ContentProvider for faster rendering
 local ContentProvider: ContentProvider = game:GetService("ContentProvider")
-local ReplicatedStorage: ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PlayerGui: PlayerGui = player:WaitForChild("PlayerGui")
 
 local preloadCache: Folder = Instance.new("Folder")
 preloadCache.Name = "_UIPreload"
-preloadCache.Parent = ReplicatedStorage
+preloadCache.Parent = PlayerGui
 
 local function createPreloadLabel(id: number): ImageLabel
     local il: ImageLabel = Instance.new("ImageLabel")
@@ -191,7 +205,7 @@ end
 local logoPreload: ImageLabel = createPreloadLabel(LOGO_ID)
 local spherePreload: ImageLabel = createPreloadLabel(SPHERE_ID)
 pcall(ContentProvider.PreloadAsync, ContentProvider, {logoPreload, spherePreload})
-task.wait(0.5)
+-- Removed blocking task.wait(0.5) to prevent frame desync
 
 print(`[EXO] Section 2.1 complete. AdmianianUI Core loaded. Logo: {LOGO_ID}, Sphere: {SPHERE_ID}`)
 
