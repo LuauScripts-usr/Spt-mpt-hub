@@ -4092,7 +4092,7 @@ do
         return result
     end
 
-    -- Local helper: predict target position with quadratic + gravity
+    -- Local helper: predict target position with quadratic + gravity (fallback)
     local function _predict_position(pos: Vector3, vel: Vector3, latency: number): Vector3
         return pos + vel * latency + vel * vel * 0.002 + Vector3.new(0, -0.5, 0)
     end
@@ -4160,64 +4160,79 @@ do
                                 continue
                             end
 
-                            -- 1000x PREDICTION: Velocity + gravity compensation
-                            local pos_ok: boolean, rootPos = pcall(function() return root.Position end)
-                            local vel_ok: boolean, rootVel = pcall(function() return root.Velocity end)
-                            if not pos_ok or typeof(rootPos) ~= "Vector3" then
-                                continue
-                            end
-                            local vel: Vector3 = (vel_ok and typeof(rootVel) == "Vector3") and rootVel or Vector3.zero
-
-                            -- Multi-hitbox targeting: HRP + Torso + Head
-                            local hitTargets: {BasePart} = {root}
-                            local torso: Instance? = tChar:FindFirstChild("UpperTorso") or tChar:FindFirstChild("Torso")
-                            local head: Instance? = tChar:FindFirstChild("Head")
-                            if torso and torso:IsA("BasePart") then
-                                table.insert(hitTargets, torso)
-                            end
-                            if head and head:IsA("BasePart") then
-                                table.insert(hitTargets, head)
+                            -- SECTION 9.5 INTEGRATION: Use PredictFuturePosition for 3s lookahead
+                            local predictedPos: Vector3? = nil
+                            if type(_G.EXO_PredictFuturePosition) == "function" then
+                                predictedPos = _G.EXO_PredictFuturePosition(targetPlr, 0.5) -- 0.5s lookahead for immediate engagement
                             end
 
-                            for _, hitPart: BasePart in hitTargets do
-                                local hpos_ok: boolean, hitPos = pcall(function() return hitPart.Position end)
-                                if not hpos_ok or typeof(hitPos) ~= "Vector3" then
+                            -- Fallback to simple prediction if advanced system unavailable
+                            if not predictedPos then
+                                local pos_ok: boolean, rootPos = pcall(function() return root.Position end)
+                                local vel_ok: boolean, rootVel = pcall(function() return root.Velocity end)
+                                if not pos_ok or typeof(rootPos) ~= "Vector3" then
                                     continue
                                 end
-
-                                local targetPos: Vector3 = _predict_position(hitPos, vel, latencyEstimate)
-                                pcall(function()
-                                    damagePart.CFrame = CFrame.new(targetPos)
-                                end)
-
-                                -- TRIPLE REMOTE FIRE (1000x upgrade)
-                                if DAMAGE_REMOTE then
-                                    pcall(function()
-                                        DAMAGE_REMOTE:FireServer(tChar, damagePart)
-                                    end)
-                                end
-                                if DAMAGE_REMOTE_ALT then
-                                    pcall(function()
-                                        DAMAGE_REMOTE_ALT:FireServer(tChar, damagePart)
-                                    end)
-                                end
-                                if DAMAGE_REMOTE_TERT then
-                                    pcall(function()
-                                        DAMAGE_REMOTE_TERT:FireServer(tChar, damagePart)
-                                    end)
-                                end
-
-                                -- Touch fallback for servers without remotes
-                                if not DAMAGE_REMOTE and firetouchinterest then
-                                    pcall(firetouchinterest, damagePart, hitPart, 0)
-                                    pcall(firetouchinterest, damagePart, hitPart, 1)
-                                end
+                                local vel: Vector3 = (vel_ok and typeof(rootVel) == "Vector3") and rootVel or Vector3.zero
+                                predictedPos = _predict_position(rootPos, vel, latencyEstimate)
                             end
 
-                            -- Restore original CFrame after sweep
-                            pcall(function()
-                                damagePart.CFrame = origCF
-                            end)
+                            -- SECTION 9.5 INTEGRATION: Omni-Sweep Kill for all hitboxes simultaneously
+                            if type(_G.EXO_OmniSweepKill) == "function" then
+                                -- Use the advanced omnidirectional sweep
+                                _G.EXO_OmniSweepKill(tChar, damagePart, origCF)
+                            else
+                                -- Fallback to legacy multi-hitbox targeting
+                                local hitTargets: {BasePart} = {root}
+                                local torso: Instance? = tChar:FindFirstChild("UpperTorso") or tChar:FindFirstChild("Torso")
+                                local head: Instance? = tChar:FindFirstChild("Head")
+                                if torso and torso:IsA("BasePart") then
+                                    table.insert(hitTargets, torso)
+                                end
+                                if head and head:IsA("BasePart") then
+                                    table.insert(hitTargets, head)
+                                end
+
+                                for _, hitPart: BasePart in hitTargets do
+                                    local hpos_ok: boolean, hitPos = pcall(function() return hitPart.Position end)
+                                    if not hpos_ok or typeof(hitPos) ~= "Vector3" then
+                                        continue
+                                    end
+
+                                    local targetPos: Vector3 = _predict_position(hitPos, root.Velocity, latencyEstimate)
+                                    pcall(function()
+                                        damagePart.CFrame = CFrame.new(targetPos)
+                                    end)
+
+                                    -- TRIPLE REMOTE FIRE (1000x upgrade)
+                                    if DAMAGE_REMOTE then
+                                        pcall(function()
+                                            DAMAGE_REMOTE:FireServer(tChar, damagePart)
+                                        end)
+                                    end
+                                    if DAMAGE_REMOTE_ALT then
+                                        pcall(function()
+                                            DAMAGE_REMOTE_ALT:FireServer(tChar, damagePart)
+                                        end)
+                                    end
+                                    if DAMAGE_REMOTE_TERT then
+                                        pcall(function()
+                                            DAMAGE_REMOTE_TERT:FireServer(tChar, damagePart)
+                                        end)
+                                    end
+
+                                    -- Touch fallback for servers without remotes
+                                    if not DAMAGE_REMOTE and firetouchinterest then
+                                        pcall(firetouchinterest, damagePart, hitPart, 0)
+                                        pcall(firetouchinterest, damagePart, hitPart, 1)
+                                    end
+                                end
+
+                                -- Restore original CFrame after sweep
+                                pcall(function()
+                                    damagePart.CFrame = origCF
+                                end)
+                            end
                         end
                     end
                 end
@@ -4810,21 +4825,36 @@ do
         if not targetChar or not player.Character then
             return
         end
-        if type(burstCount) ~= "number" or burstCount < 1 then
-            burstCount = IK_BurstCount
+        
+        -- SECTION 9.5 INTEGRATION: Calculate exact hits needed based on health
+        local calculatedBurst: number = burstCount
+        if type(_G.EXO_CalculateRequiredHits) == "function" then
+            calculatedBurst = _G.EXO_CalculateRequiredHits(targetChar)
+        elseif type(burstCount) ~= "number" or burstCount < 1 then
+            calculatedBurst = IK_BurstCount
         end
 
-        -- Populate 9-hitbox target list
-        table.clear(_ik_target_parts)
-        for _, name: string in _ik_hitbox_names do
-            local part: Instance? = targetChar:FindFirstChild(name)
-            if part and part:IsA("BasePart") then
-                table.insert(_ik_target_parts, part)
-            end
+        -- SECTION 9.5 INTEGRATION: Use KillChainWithConfirmation for verification & escalation
+        if type(_G.EXO_KillChainWithConfirmation) == "function" then
+            -- Advanced kill chain with confirmation and escalation
+            _G.EXO_KillChainWithConfirmation(targetChar)
+            return -- Exit early since KillChain handles everything
         end
 
+        -- Fallback to legacy burst fire
         if #_ik_target_parts == 0 then
-            return
+            -- Populate 9-hitbox target list
+            table.clear(_ik_target_parts)
+            for _, name: string in _ik_hitbox_names do
+                local part: Instance? = targetChar:FindFirstChild(name)
+                if part and part:IsA("BasePart") then
+                    table.insert(_ik_target_parts, part)
+                end
+            end
+
+            if #_ik_target_parts == 0 then
+                return
+            end
         end
 
         -- PARALLEL FIRE: All tools simultaneously
@@ -4836,7 +4866,7 @@ do
             if tool and tool.Parent then
                 if fight then
                     pcall(function()
-                        for _ = 1, burstCount do
+                        for _ = 1, calculatedBurst do
                             fight:FireServer()
                         end
                     end)
@@ -6028,6 +6058,40 @@ do
         end
         if knownThreatsNearby > 0 then
             scores.COMBAT += knownThreatsNearby * 10
+        end
+
+        -- SECTION 9.5 INTEGRATION: Factor in AI engagement decision and kill probability
+        -- Use CalculateKillProbability to boost COMBAT score when high-confidence kills available
+        if type(_G.EXO_CalculateKillProbability) == "function" then
+            local bestProb: number = 0
+            local players_ok: boolean, players_list = pcall(function() return Players:GetPlayers() end)
+            if players_ok and type(players_list) == "table" then
+                for _, plr: Player in players_list do
+                    if plr ~= player then
+                        local prob = _G.EXO_CalculateKillProbability(plr)
+                        if prob > bestProb then
+                            bestProb = prob
+                        end
+                    end
+                end
+            end
+            -- Boost COMBAT score proportionally to kill probability
+            if bestProb > 0.7 then
+                scores.COMBAT += 30 -- High confidence kill available
+            elseif bestProb > 0.4 then
+                scores.COMBAT += 15 -- Moderate confidence
+            end
+        end
+
+        -- SECTION 9.5 INTEGRATION: Let AI_EngagementDecision influence mode selection
+        -- If AI recommends engagement, boost COMBAT score
+        if type(_G.EXO_AI_EngagementDecision) == "function" then
+            -- Run the engagement decision logic (it updates Aura.Enabled internally)
+            pcall(_G.EXO_AI_EngagementDecision)
+            -- If Aura was enabled by AI, boost COMBAT
+            if Aura.Enabled then
+                scores.COMBAT += 20
+            end
         end
 
         return scores
@@ -7887,6 +7951,11 @@ do
                 table.insert(DeathTimestamps, tick())
                 if #DeathTimestamps > 20 then
                     table.remove(DeathTimestamps, 1)
+                end
+
+                -- SECTION 9.5 INTEGRATION: Trigger spawn intelligence on death for respawn prediction
+                if type(_G.EXO_PredictRespawn) == "function" then
+                    pcall(_G.EXO_PredictRespawn, player)
                 end
 
                 if not KillNotifEnabled then
@@ -12168,6 +12237,12 @@ do
     if type(_G.EXO_SetupCharacterHooks) == "function" then
         pcall(_G.EXO_SetupCharacterHooks)
         print("[EXO] Step 3: Character hooks registered.")
+    end
+
+    -- SECTION 9.5 INTEGRATION: Map all spawn points on startup for Spawn Intelligence
+    if type(_G.EXO_MapAllSpawnPoints) == "function" then
+        pcall(_G.EXO_MapAllSpawnPoints)
+        print("[EXO] Step 3b: Spawn Intelligence Engine initialized (spawn points mapped).")
     end
 
     -- Step 4: Initialize chat GUI (ready for first kill analysis)
