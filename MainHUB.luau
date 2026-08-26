@@ -17,6 +17,7 @@
 -- ║  SECTION 0: ANTI-TAMPER INTEGRITY (LIGHTWEIGHT)                    ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
 local _EXO_VERSION: number = 10.0
+local _EXO_V: number = _EXO_VERSION
 local _EXO_BUILD: string = "SENTINEL_PRIME"
 local _EXO_INTEGRITY: boolean = true
 local _EXO_INTEGRITY_LOG: {string} = {}
@@ -555,6 +556,15 @@ local latencyEstimate: number = 0.08
 local ThreatDecay: number = 0
 local PeakThreat: number = 0
 local ThreatVelocity: {{time: number, delta: number}} = {}
+
+-- AI & Strategy State Tables (declared here for Sections 15.8, 20-22, 25.3)
+local AI_PROFILE_FILE: string = "exo_v10_ai_profiles.dat"
+local ThreatProfiles: {[string]: any} = {}
+local AIMemory: {[string]: any} = {StrategyResults = {}, FeatureEffectiveness = {}, OpponentAdaptations = {}, SessionLearningRate = 0.1}
+local StrategyEngine: {[string]: any} = {ActiveStrategy = nil, FeatureCombinations = {}, StrategyHistory = {}, LastStrategyTime = 0}
+local ChatSystem: {[string]: any} = {GUI = nil, ScrollFrame = nil, InputBox = nil, SendButton = nil, StatusLabel = nil, Dragging = false, DragStart = nil, StartPos = nil, AwaitingReply = false, ReplyCallback = nil, MessageCount = 0, IsOpen = false}
+local RobotAnim: {[string]: any} = {State = "IDLE", Body = nil, Eyes = nil, Arm = nil}
+local AI_State: {[string]: any} = {Current = "IDLE", PendingStrategy = nil}
 
 -- Insta-Kill State (expanded)
 local InstaKillEnabled: boolean = false
