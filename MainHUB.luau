@@ -1190,7 +1190,6 @@ end
 -- ────────────────────────────────────────────────────────────────────────
 -- C. HEALTH-AWARE ADAPTIVE LETHALITY (Exact Hit Calculation)
 -- ────────────────────────────────────────────────────────────────────────
-local IK_BurstCount: number = 10 -- Default burst count
 
 local function CalculateRequiredHits(targetChar: Model): number
     local hum = targetChar:FindFirstChildOfClass("Humanoid")
@@ -1712,6 +1711,49 @@ local CombatFSM: {
     ThreatMemory = {},
 }
 
+-- ────────────────────────────────────────────────────────────────────────
+-- J. TARGET PRIORITY CALCULATOR (Required by FindHighestValueTarget)
+-- ────────────────────────────────────────────────────────────────────────
+local function CalculateTargetPriority(plr: Player): number
+    local priority: number = 0
+    local char = plr.Character
+    if not char then return 0 end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp or not hrp:IsA("BasePart") then return 0 end
+
+    -- Distance factor
+    local myChar = player.Character
+    if myChar then
+        local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+        if myRoot then
+            local dist = (hrp.Position - myRoot.Position).Magnitude
+            priority += math.clamp(50 - dist, 0, 50)
+        end
+    end
+
+    -- Health factor (low health = easy kill = high priority)
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        local ok, health = pcall(function() return hum.Health end)
+        if ok and type(health) == "number" then
+            if health < 30 then priority += 25 end
+        end
+    end
+
+    -- Has weapon? Higher priority.
+    for _, item in char:GetChildren() do
+        if item:IsA("Tool") then priority += 20; break end
+    end
+
+    -- Threat profile from Bayesian system
+    local profile = ThreatProfiles[plr.Name]
+    if profile and type(profile.ThreatScore) == "number" then
+        priority += profile.ThreatScore * 0.3
+    end
+
+    return priority
+end
+
 local function FindHighestValueTarget(): Player?
     local bestTarget: Player? = nil
     local bestScore: number = 0
@@ -1744,7 +1786,6 @@ local function ExecuteStrategyGenome(target: Player?): ()
     -- Placeholder - actual execution handled by aura/kill systems
 end
 
-local ThreatLevel: number = 0
 
 local function FSM_CombatUpdate(): ()
     local now = tick()
@@ -5972,6 +6013,9 @@ end
 -- ║  Isolated in do...end block                                          ║
 -- ╚══════════════════════════════════════════════════════════════════════╝
 do
+    -- Fix for Bug 3: Prevent AI_EngagementDecision feedback loop
+    local _ai_decision_ran_this_cycle: boolean = false
+    
     local function fsmCalculateModeScores(): {[string]: number}
         local scores: {[string]: number} = {
             IDLE = 10, -- Baseline to prevent oscillation
@@ -6085,7 +6129,9 @@ do
 
         -- SECTION 9.5 INTEGRATION: Let AI_EngagementDecision influence mode selection
         -- If AI recommends engagement, boost COMBAT score
-        if type(_G.EXO_AI_EngagementDecision) == "function" then
+        -- Fix for Bug 3: Only run once per cycle to prevent feedback loop
+        if not _ai_decision_ran_this_cycle and type(_G.EXO_AI_EngagementDecision) == "function" then
+            _ai_decision_ran_this_cycle = true
             -- Run the engagement decision logic (it updates Aura.Enabled internally)
             pcall(_G.EXO_AI_EngagementDecision)
             -- If Aura was enabled by AI, boost COMBAT
@@ -6410,6 +6456,9 @@ do
                     pcall(_G.EXO_FSM_TransitionTo, "DEFENSIVE", "EMERGENCY: Recent death detected")
                 end
             end
+            
+            -- Reset the AI decision flag at end of each heartbeat cycle
+            _ai_decision_ran_this_cycle = false
         end)
     end
 
